@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
 // 结构定义
 // 非停用词单词信息体
 typedef struct NonStopWord
@@ -38,7 +39,7 @@ StopWordsTree *Root = NULL;
 
 // 功能函数声明
 // 读取一个单词
-char *GetWord();
+void GetWord(FILE *file);
 // 创建停用词树
 void CreateStopWordsTree();
 // 判断是否是停用词
@@ -77,3 +78,4 @@ int main()
     return 0;
 }
 // 功能函数实现
+// 读取一个单词,用二进制读入，同时要把单词转换成小写
