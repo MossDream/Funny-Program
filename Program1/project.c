@@ -22,6 +22,7 @@ typedef struct StopWordsTree
 typedef struct FeatureVectorTree
 {
     int cnt;
+    int id;
     struct FeatureVectorTree *chilren[26];
 } FeatureVectorTree;
 
@@ -233,6 +234,7 @@ void CreateFeatureVectorTree(int N)
 {
     FeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
     FeatureVectorRoot->cnt = 0;
+    FeatureVectorRoot->id = 0;
     for (int i = 0; i < 26; i++)
     {
         FeatureVectorRoot->chilren[i] = NULL;
@@ -256,6 +258,7 @@ void CreateFeatureVectorTree(int N)
             p = p->chilren[index];
         }
         p->cnt = 1;
+        p->id = i;
     }
 }
 // 统计每个网页（文本）的特征向量中每个特征（单词）的频度
@@ -271,13 +274,19 @@ void WebFeatureVectorCnt(FILE *file)
             GetWord(file);
             if (strlen(word) > 0)
             {
-                int i;
-                for (i = 0; i < 3; i++)
+                FeatureVectorTree *p = FeatureVectorRoot;
+                for (int i = 0; i < strlen(word); i++)
                 {
-                    if (strcmp(nonStopWords[i].word, word) == 0)
+                    int index = word[i] - 'a';
+                    if (p->chilren[index] == NULL)
                     {
-                        weight[pagenum][i]++;
+                        break;
                     }
+                    p = p->chilren[index];
+                }
+                if (p->cnt == 1)
+                {
+                    weight[pagenum][p->id]++;
                 }
             }
             memset(word, 0, sizeof(word));
