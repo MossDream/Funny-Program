@@ -110,13 +110,13 @@ void GetWord(FILE *file)
 // 创建停用词树,用前缀树实现
 void CreateStopWordsTree()
 {
-    StopWordsTree *p = Root;
     Root = (StopWordsTree *)malloc(sizeof(StopWordsTree));
     Root->cnt = 0;
     for (int i = 0; i < 26; i++)
     {
         Root->chilren[i] = NULL;
     }
+    StopWordsTree *p = Root;
     while (fscanf(StopWordsFile, "%s", word) != EOF)
     {
         p = Root;
@@ -140,6 +140,24 @@ void CreateStopWordsTree()
 // 判断是否是停用词,是返回1,否返回0
 int IsStopWord()
 {
+    StopWordsTree *p = Root;
+    for (int i = 0; i < strlen(word); i++)
+    {
+        int index = word[i] - 'a';
+        if (p->chilren[index] == NULL)
+        {
+            return 0;
+        }
+        p = p->chilren[index];
+    }
+    if (p->cnt == 1)
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 // 非停用词词频统计
 void NonStopWordsCount()
