@@ -26,6 +26,8 @@ NonStopWord nonStopWords[20000] = {0};
 int nonStopWordsNum = 0;
 // 单词数组
 char word[1000] = {0};
+// 各网页权重向量构成的二维数组
+int weight[20000][1000] = {0};
 
 // 停用词文件指针
 FILE *StopWordsFile;
@@ -48,6 +50,8 @@ int IsStopWord();
 void NonStopWordsCount();
 // 非停用词词频排序,并得到特征向量
 void NonStopWordsSort();
+// 统计每个网页（文本）的特征向量中每个特征（单词）的频度
+void WebFeatureVectorCnt(FILE *file);
 // 主程序实现
 int main()
 {
@@ -70,10 +74,12 @@ int main()
         printf("样本网页文件打开失败！\n");
         return 1;
     }
-    // 步骤1：得到所有网页的特征向量：非停用词单词数组排序后前N个信息体
+    // 步骤1:得到所有网页的特征向量：非停用词单词数组排序后前N个信息体
     CreateStopWordsTree();
     NonStopWordsCount();
     NonStopWordsSort();
+    // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度
+    WebFeatureVectorCnt(WebFile);
 
     // 关闭文件
     fclose(StopWordsFile);
@@ -209,8 +215,31 @@ void NonStopWordsSort()
 {
     int i, j;
     qsort(nonStopWords, nonStopWordsNum, sizeof(NonStopWord), cmp);
-    for (i = 0; i < 5; i++)
+}
+// 统计每个网页（文本）的特征向量中每个特征（单词）的频度
+void WebFeatureVectorCnt(FILE *file)
+{
+    fseek(file, 0, SEEK_SET);
+    int pagenum = 0;
+    while (!feof(file))
     {
-        printf("%s %d\n", nonStopWords[i].word, nonStopWords[i].count);
+        while (fgetc(file) != '\f')
+        {
+            fseek(file, -1, SEEK_CUR);
+            GetWord(file);
+            if (strlen(word) > 0)
+            {
+                int i;
+                for (i = 0; i < 1000; i++)
+                {
+                    if (strcmp(nonStopWords[i].word, word) == 0)
+                    {
+                        weight[pagenum][i]++;
+                    }
+                }
+            }
+            memset(word, 0, sizeof(word));
+        }
+        pagenum++;
     }
 }
