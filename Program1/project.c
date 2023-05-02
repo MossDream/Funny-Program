@@ -37,6 +37,11 @@ int nonStopWordsNum = 0;
 // 样本网页的非停用词数量
 int sampleNonStopWordsNum = 0;
 
+// 原网页页数
+int pageNum = 0;
+// 样本网页页数
+int samplePageNum = 0;
+
 // 单词数组
 char word[1000] = {0};
 
@@ -46,12 +51,20 @@ int weight[20000][1000] = {0};
 // 样本网页权重向量
 int sampleWeight[20000][1000] = {0};
 
+// 各网页指纹构成的二维数组
+// 原网页指纹
+int fingerprint[20000][16] = {0};
+// 样本网页指纹
+int sampleFingerprint[20000][16] = {0};
+
 // 停用词文件指针
 FILE *StopWordsFile;
 // 已有网页文件指针
 FILE *WebFile;
 // 样本网页文件指针
 FILE *SampleFile;
+// Hash表文件指针
+FILE *HashFile;
 
 // 停用词树根节点
 StopWordsTree *StopWordsRoot = NULL;
@@ -76,6 +89,8 @@ void NonStopWordsSort(FILE *file);
 void CreateFeatureVectorTree(int N, FILE *file);
 //  统计每个网页（文本）的特征向量中每个特征（单词）的频度
 void WebFeatureVectorCnt(FILE *file);
+// 计算网页指纹
+void WebFingerprintCnt(int N, int M);
 // 主程序实现
 int main()
 {
@@ -98,6 +113,12 @@ int main()
         printf("样本网页文件打开失败！\n");
         return 1;
     }
+    HashFile = fopen("hashvalue.txt", "w");
+    if (HashFile == NULL)
+    {
+        printf("Hash表文件打开失败！\n");
+        return 1;
+    }
     // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
     CreateStopWordsTree();
     NonStopWordsCount(WebFile);
@@ -109,11 +130,14 @@ int main()
     CreateFeatureVectorTree(1000, SampleFile);
     WebFeatureVectorCnt(WebFile);
     WebFeatureVectorCnt(SampleFile);
+    // 步骤3:计算各网页的指纹
+    WebFingerprintCnt(1000, 16);
 
     // 关闭文件
     fclose(StopWordsFile);
     fclose(WebFile);
     fclose(SampleFile);
+    fclose(HashFile);
     return 0;
 }
 // 功能函数实现
@@ -360,7 +384,7 @@ void WebFeatureVectorCnt(FILE *file)
     if (file == WebFile)
     {
         fseek(file, 0, SEEK_SET);
-        int pagenum = 0;
+        pageNum = 0;
         while (!feof(file))
         {
             while (fgetc(file) != '\f' && !feof(file))
@@ -381,18 +405,18 @@ void WebFeatureVectorCnt(FILE *file)
                     }
                     if (p->cnt == 1)
                     {
-                        weight[pagenum][p->id]++;
+                        weight[pageNum][p->id]++;
                     }
                 }
                 memset(word, 0, sizeof(word));
             }
-            pagenum++;
+            pageNum++;
         }
     }
     else if (file == SampleFile)
     {
         fseek(file, 0, SEEK_SET);
-        int pagenum = 0;
+        samplePageNum = 0;
         while (!feof(file))
         {
             while (fgetc(file) != '\f' && !feof(file))
@@ -413,12 +437,29 @@ void WebFeatureVectorCnt(FILE *file)
                     }
                     if (p->cnt == 1)
                     {
-                        sampleWeight[pagenum][p->id]++;
+                        sampleWeight[samplePageNum][p->id]++;
                     }
                 }
                 memset(word, 0, sizeof(word));
             }
-            pagenum++;
+            samplePageNum++;
+        }
+    }
+}
+// 计算网页指纹
+void WebFingerprintCnt(int N, int M)
+{
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int finger = 0;
+    for (i = 0; i < pageNum; i++)
+    {
+        for (j = 0; j < N; j++)
+        {
+            for (k = 0; k < M; k++)
+            {
+                        }
         }
     }
 }
