@@ -73,7 +73,7 @@ void NonStopWordsCount(FILE *file);
 // 非停用词词频排序
 void NonStopWordsSort(FILE *file);
 // 创建特征向量树（排序后前N个信息体就是特征向量）
-void CreateFeatureVectorTree(int N);
+void CreateFeatureVectorTree(int N, FILE *file);
 //  统计每个网页（文本）的特征向量中每个特征（单词）的频度
 void WebFeatureVectorCnt(FILE *file);
 // 主程序实现
@@ -105,7 +105,8 @@ int main()
     NonStopWordsSort(WebFile);
     NonStopWordsSort(SampleFile);
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
-    CreateFeatureVectorTree(1000);
+    CreateFeatureVectorTree(1000, WebFile);
+    CreateFeatureVectorTree(1000, SampleFile);
     WebFeatureVectorCnt(WebFile);
     WebFeatureVectorCnt(SampleFile);
 
@@ -288,35 +289,69 @@ void NonStopWordsSort(FILE *file)
     }
 }
 // 创建特征向量树,用前缀树实现
-void CreateFeatureVectorTree(int N)
+void CreateFeatureVectorTree(int N, FILE *file)
 {
-    FeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
-    FeatureVectorRoot->cnt = 0;
-    FeatureVectorRoot->id = 0;
-    for (int i = 0; i < 26; i++)
+    if (file == WebFile)
     {
-        FeatureVectorRoot->chilren[i] = NULL;
-    }
-    FeatureVectorTree *p = FeatureVectorRoot;
-    for (int i = 0; i < N; i++)
-    {
-        p = FeatureVectorRoot;
-        for (int j = 0; j < strlen(nonStopWords[i].word); j++)
+        FeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
+        FeatureVectorRoot->cnt = 0;
+        FeatureVectorRoot->id = 0;
+        for (int i = 0; i < 26; i++)
         {
-            int index = nonStopWords[i].word[j] - 'a';
-            if (p->chilren[index] == NULL)
-            {
-                p->chilren[index] = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
-                p->chilren[index]->cnt = 0;
-                for (int k = 0; k < 26; k++)
-                {
-                    p->chilren[index]->chilren[k] = NULL;
-                }
-            }
-            p = p->chilren[index];
+            FeatureVectorRoot->chilren[i] = NULL;
         }
-        p->cnt = 1;
-        p->id = i;
+        FeatureVectorTree *p = FeatureVectorRoot;
+        for (int i = 0; i < N; i++)
+        {
+            p = FeatureVectorRoot;
+            for (int j = 0; j < strlen(nonStopWords[i].word); j++)
+            {
+                int index = nonStopWords[i].word[j] - 'a';
+                if (p->chilren[index] == NULL)
+                {
+                    p->chilren[index] = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
+                    p->chilren[index]->cnt = 0;
+                    for (int k = 0; k < 26; k++)
+                    {
+                        p->chilren[index]->chilren[k] = NULL;
+                    }
+                }
+                p = p->chilren[index];
+            }
+            p->cnt = 1;
+            p->id = i;
+        }
+    }
+    else if (file == SampleFile)
+    {
+        sampleFeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
+        sampleFeatureVectorRoot->cnt = 0;
+        sampleFeatureVectorRoot->id = 0;
+        for (int i = 0; i < 26; i++)
+        {
+            sampleFeatureVectorRoot->chilren[i] = NULL;
+        }
+        FeatureVectorTree *p = sampleFeatureVectorRoot;
+        for (int i = 0; i < N; i++)
+        {
+            p = sampleFeatureVectorRoot;
+            for (int j = 0; j < strlen(sampleNonStopWords[i].word); j++)
+            {
+                int index = sampleNonStopWords[i].word[j] - 'a';
+                if (p->chilren[index] == NULL)
+                {
+                    p->chilren[index] = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
+                    p->chilren[index]->cnt = 0;
+                    for (int k = 0; k < 26; k++)
+                    {
+                        p->chilren[index]->chilren[k] = NULL;
+                    }
+                }
+                p = p->chilren[index];
+            }
+            p->cnt = 1;
+            p->id = i;
+        }
     }
 }
 // 统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
