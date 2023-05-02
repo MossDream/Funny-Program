@@ -36,6 +36,7 @@ int nonStopWordsNum = 0;
 char word[1000] = {0};
 // 各网页权重向量构成的二维数组
 int weight[20000][1000] = {0};
+int sampleWeight[20000][1000] = {0};
 
 // 停用词文件指针
 FILE *StopWordsFile;
@@ -268,7 +269,7 @@ void WebFeatureVectorCnt(FILE *file)
     int pagenum = 0;
     while (!feof(file))
     {
-        while (fgetc(file) != '\f')
+        while (fgetc(file) != '\f' && !feof(file))
         {
             fseek(file, -1, SEEK_CUR);
             GetWord(file);
