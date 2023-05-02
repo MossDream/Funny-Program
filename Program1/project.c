@@ -162,6 +162,29 @@ int IsStopWord()
 // 非停用词词频统计
 void NonStopWordsCount()
 {
+    GetWord(WebFile);
+    while (strlen(word) > 0)
+    {
+        if (IsStopWord() == 0)
+        {
+            int i;
+            for (i = 0; i < nonStopWordsNum; i++)
+            {
+                if (strcmp(nonStopWords[i].word, word) == 0)
+                {
+                    nonStopWords[i].count++;
+                    break;
+                }
+            }
+            if (i == nonStopWordsNum)
+            {
+                strcpy(nonStopWords[nonStopWordsNum].word, word);
+                nonStopWords[nonStopWordsNum].count = 1;
+                nonStopWordsNum++;
+            }
+        }
+        GetWord(WebFile);
+    }
 }
 // 非停用词词频排序,并得到特征向量
 // 降序排列,词频相同的按字典序升序排列,这是qsort函数的比较函数
