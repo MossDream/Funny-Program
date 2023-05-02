@@ -11,16 +11,23 @@ typedef struct NonStopWord
     int count;
 } NonStopWord;
 
-// 停用词树，用前缀s树实现
+// 停用词树，用前缀树实现
 typedef struct StopWordsTree
 {
     int cnt;
     struct StopWordsTree *chilren[26];
 } StopWordsTree;
 
+// 特征向量树，用前缀树实现
+typedef struct FeatureVectorTree
+{
+    int cnt;
+    struct FeatureVectorTree *chilren[26];
+} FeatureVectorTree;
+
 // 变量定义
 
-// 非停用词单词数组
+// 非停用词单词二叉查找树
 NonStopWord nonStopWords[20000] = {0};
 // 非停用词数量
 int nonStopWordsNum = 0;
@@ -37,7 +44,9 @@ FILE *WebFile;
 FILE *SampleFile;
 
 // 停用词树根节点
-StopWordsTree *Root = NULL;
+StopWordsTree *StopWordsRoot = NULL;
+// 特征向量树根节点
+FeatureVectorTree *FeatureVectorRoot = NULL;
 
 // 功能函数声明
 // 读取一个单词
@@ -48,9 +57,11 @@ void CreateStopWordsTree();
 int IsStopWord();
 // 非停用词词频统计
 void NonStopWordsCount();
-// 非停用词词频排序,并得到特征向量
+// 非停用词词频排序
 void NonStopWordsSort();
-// 统计每个网页（文本）的特征向量中每个特征（单词）的频度
+// 创建特征向量树（排序后前N个信息体就是特征向量）
+void CreateFeatureVectorTree(int N);
+//  统计每个网页（文本）的特征向量中每个特征（单词）的频度
 void WebFeatureVectorCnt(FILE *file);
 // 主程序实现
 int main()
@@ -74,11 +85,12 @@ int main()
         printf("样本网页文件打开失败！\n");
         return 1;
     }
-    // 步骤1:得到所有网页的特征向量：非停用词单词数组排序后前N个信息体
+    // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
     CreateStopWordsTree();
     NonStopWordsCount();
     NonStopWordsSort();
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度
+    CreateFeatureVectorTree(1000);
     WebFeatureVectorCnt(WebFile);
 
     // 关闭文件
@@ -116,16 +128,16 @@ void GetWord(FILE *file)
 // 创建停用词树,用前缀树实现
 void CreateStopWordsTree()
 {
-    Root = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-    Root->cnt = 0;
+    StopWordsRoot = (StopWordsTree *)malloc(sizeof(StopWordsTree));
+    StopWordsRoot->cnt = 0;
     for (int i = 0; i < 26; i++)
     {
-        Root->chilren[i] = NULL;
+        StopWordsRoot->chilren[i] = NULL;
     }
-    StopWordsTree *p = Root;
+    StopWordsTree *p = StopWordsRoot;
     while (fscanf(StopWordsFile, "%s", word) != EOF)
     {
-        p = Root;
+        p = StopWordsRoot;
         for (int i = 0; i < strlen(word); i++)
         {
             int index = word[i] - 'a';
@@ -148,7 +160,7 @@ void CreateStopWordsTree()
 // 判断是否是停用词,是返回1,否返回0
 int IsStopWord()
 {
-    StopWordsTree *p = Root;
+    StopWordsTree *p = StopWordsRoot;
     for (int i = 0; i < strlen(word); i++)
     {
         int index = word[i] - 'a';
