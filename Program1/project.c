@@ -208,8 +208,8 @@ void NonStopWordsCount()
     }
     memset(word, 0, sizeof(word));
 }
-// 非停用词词频排序,并得到特征向量
-// 降序排列,词频相同的按字典序升序排列,这是qsort函数的比较函数
+// 非停用词词频排序,降序排列,词频相同的按字典序升序排列
+// 这是qsort函数的比较函数
 int cmp(const void *a, const void *b)
 {
     NonStopWord *c = (NonStopWord *)a;
@@ -227,6 +227,36 @@ void NonStopWordsSort()
 {
     int i, j;
     qsort(nonStopWords, nonStopWordsNum, sizeof(NonStopWord), cmp);
+}
+// 创建特征向量树,用前缀树实现
+void CreateFeatureVectorTree(int N)
+{
+    FeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
+    FeatureVectorRoot->cnt = 0;
+    for (int i = 0; i < 26; i++)
+    {
+        FeatureVectorRoot->chilren[i] = NULL;
+    }
+    FeatureVectorTree *p = FeatureVectorRoot;
+    for (int i = 0; i < N; i++)
+    {
+        p = FeatureVectorRoot;
+        for (int j = 0; j < strlen(nonStopWords[i].word); j++)
+        {
+            int index = nonStopWords[i].word[j] - 'a';
+            if (p->chilren[index] == NULL)
+            {
+                p->chilren[index] = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
+                p->chilren[index]->cnt = 0;
+                for (int k = 0; k < 26; k++)
+                {
+                    p->chilren[index]->chilren[k] = NULL;
+                }
+            }
+            p = p->chilren[index];
+        }
+        p->cnt = 1;
+    }
 }
 // 统计每个网页（文本）的特征向量中每个特征（单词）的频度
 void WebFeatureVectorCnt(FILE *file)
