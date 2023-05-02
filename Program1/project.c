@@ -178,3 +178,41 @@ int IsStopWord()
     }
     return 0;
 }
+// 非停用词词频统计
+void NonStopWordsCount()
+{
+    int i, j, flag;
+    while (1)
+    {
+        GetWord(WebFile);
+        if (feof(WebFile))
+        {
+            break;
+        }
+        if (IsStopWord() == 0)
+        {
+            flag = 0;
+            for (i = 0; i < 20000; i++)
+            {
+                if (strcmp(word, nonStopWords[i].word) == 0)
+                {
+                    nonStopWords[i].count++;
+                    flag = 1;
+                    break;
+                }
+            }
+            if (flag == 0)
+            {
+                for (i = 0; i < 20000; i++)
+                {
+                    if (nonStopWords[i].count == 0)
+                    {
+                        strcpy(nonStopWords[i].word, word);
+                        nonStopWords[i].count = 1;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
