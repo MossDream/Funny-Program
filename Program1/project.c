@@ -71,7 +71,7 @@ int IsStopWord();
 // 非停用词词频统计
 void NonStopWordsCount(FILE *file);
 // 非停用词词频排序
-void NonStopWordsSort();
+void NonStopWordsSort(FILE *file);
 // 创建特征向量树（排序后前N个信息体就是特征向量）
 void CreateFeatureVectorTree(int N);
 //  统计每个网页（文本）的特征向量中每个特征（单词）的频度
@@ -102,7 +102,8 @@ int main()
     CreateStopWordsTree();
     NonStopWordsCount(WebFile);
     NonStopWordsCount(SampleFile);
-    NonStopWordsSort();
+    NonStopWordsSort(WebFile);
+    NonStopWordsSort(SampleFile);
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
     CreateFeatureVectorTree(1000);
     WebFeatureVectorCnt(WebFile);
@@ -274,10 +275,17 @@ int cmp(const void *a, const void *b)
         return strcmp(c->word, d->word);
     }
 }
-void NonStopWordsSort()
+void NonStopWordsSort(FILE *file)
 {
     int i, j;
-    qsort(nonStopWords, nonStopWordsNum, sizeof(NonStopWord), cmp);
+    if (file == WebFile)
+    {
+        qsort(nonStopWords, nonStopWordsNum, sizeof(NonStopWord), cmp);
+    }
+    else if (file == SampleFile)
+    {
+        qsort(sampleNonStopWords, sampleNonStopWordsNum, sizeof(NonStopWord), cmp);
+    }
 }
 // 创建特征向量树,用前缀树实现
 void CreateFeatureVectorTree(int N)
