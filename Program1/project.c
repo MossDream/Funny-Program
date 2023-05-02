@@ -28,10 +28,15 @@ typedef struct FeatureVectorTree
 
 // 变量定义
 
-// 非停用词单词二叉查找树
+// 原网页的非停用词单词数组
 NonStopWord nonStopWords[20000] = {0};
-// 非停用词数量
+// 样本网页的非停用词单词数组
+NonStopWord sampleNonStopWords[20000] = {0};
+// 原网页的非停用词数量
 int nonStopWordsNum = 0;
+// 样本网页的非停用词数量
+int sampleNonStopWordsNum = 0;
+
 // 单词数组
 char word[1000] = {0};
 
@@ -51,7 +56,10 @@ FILE *SampleFile;
 // 停用词树根节点
 StopWordsTree *StopWordsRoot = NULL;
 // 特征向量树根节点
+// 原网页特征向量树根节点
 FeatureVectorTree *FeatureVectorRoot = NULL;
+// 样本网页特征向量树根节点
+FeatureVectorTree *sampleFeatureVectorRoot = NULL;
 
 // 功能函数声明
 // 读取一个单词
@@ -61,7 +69,7 @@ void CreateStopWordsTree();
 // 判断是否是停用词
 int IsStopWord();
 // 非停用词词频统计
-void NonStopWordsCount();
+void NonStopWordsCount(FILE *file);
 // 非停用词词频排序
 void NonStopWordsSort();
 // 创建特征向量树（排序后前N个信息体就是特征向量）
@@ -92,7 +100,8 @@ int main()
     }
     // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
     CreateStopWordsTree();
-    NonStopWordsCount();
+    NonStopWordsCount(WebFile);
+    NonStopWordsCount(SampleFile);
     NonStopWordsSort();
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
     CreateFeatureVectorTree(1000);
@@ -186,33 +195,69 @@ int IsStopWord()
     }
 }
 // 非停用词词频统计
-void NonStopWordsCount()
+void NonStopWordsCount(FILE *file)
 {
-    GetWord(WebFile);
-    while (strlen(word) > 0)
+    if (file == WebFile)
     {
-        if (IsStopWord() == 0)
+        GetWord(WebFile);
+        while (strlen(word) > 0)
         {
-            int i;
-            for (i = 0; i < nonStopWordsNum; i++)
+            if (IsStopWord() == 0)
             {
-                if (strcmp(nonStopWords[i].word, word) == 0)
+                int i;
+                for (i = 0; i < nonStopWordsNum; i++)
                 {
-                    nonStopWords[i].count++;
-                    break;
+                    if (strcmp(nonStopWords[i].word, word) == 0)
+                    {
+                        nonStopWords[i].count++;
+                        break;
+                    }
+                }
+                if (i == nonStopWordsNum)
+                {
+                    strcpy(nonStopWords[nonStopWordsNum].word, word);
+                    nonStopWords[nonStopWordsNum].count = 1;
+                    nonStopWordsNum++;
                 }
             }
-            if (i == nonStopWordsNum)
-            {
-                strcpy(nonStopWords[nonStopWordsNum].word, word);
-                nonStopWords[nonStopWordsNum].count = 1;
-                nonStopWordsNum++;
-            }
+            memset(word, 0, sizeof(word));
+            GetWord(WebFile);
         }
         memset(word, 0, sizeof(word));
-        GetWord(WebFile);
     }
-    memset(word, 0, sizeof(word));
+    else if (file == SampleFile)
+    {
+        GetWord(SampleFile);
+        while (strlen(word) > 0)
+        {
+            if (IsStopWord() == 0)
+            {
+                int i;
+                for (i = 0; i < sampleNonStopWordsNum; i++)
+                {
+                    if (strcmp(sampleNonStopWords[i].word, word) == 0)
+                    {
+                        sampleNonStopWords[i].count++;
+                        break;
+                    }
+                }
+                if (i == sampleNonStopWordsNum)
+                {
+                    strcpy(sampleNonStopWords[sampleNonStopWordsNum].word, word);
+                    sampleNonStopWords[sampleNonStopWordsNum].count = 1;
+                    sampleNonStopWordsNum++;
+                }
+            }
+            memset(word, 0, sizeof(word));
+            GetWord(SampleFile);
+        }
+        memset(word, 0, sizeof(word));
+    }
+    else
+    {
+        printf("文件打开失败！\n");
+        return;
+    }
 }
 // 非停用词词频排序,降序排列,词频相同的按字典序升序排列
 // 这是qsort函数的比较函数
