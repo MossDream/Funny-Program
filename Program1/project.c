@@ -23,7 +23,8 @@ typedef struct StopWordsTree
 
 // 非停用词单词数组
 NonStopWord nonStopWords[20000] = {0};
-
+// 非停用词数量
+int nonStopWordsNum = 0;
 // 单词数组
 char word[20] = {0};
 
@@ -209,10 +210,26 @@ void NonStopWordsCount()
                     {
                         strcpy(nonStopWords[i].word, word);
                         nonStopWords[i].count = 1;
+                        nonStopWordsNum++;
                         break;
                     }
                 }
             }
         }
+    }
+}
+// 非停用词词频排序,并得到特征向量
+// 降序排列,词频相同的按字典序升序排列,这是qsort函数的比较函数
+void cmp(const void *a, const void *b)
+{
+    NonStopWord *c = (NonStopWord *)a;
+    NonStopWord *d = (NonStopWord *)b;
+    if (c->count != d->count)
+    {
+        return d->count - c->count;
+    }
+    else
+    {
+        return strcmp(c->word, d->word);
     }
 }
