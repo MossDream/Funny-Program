@@ -11,12 +11,11 @@ typedef struct NonStopWord
     int count;
 } NonStopWord;
 
-// 停用词树
+// 停用词树，用前缀s树实现
 typedef struct StopWordsTree
 {
-    char word[20];
-    struct StopWordsTree *left;
-    struct StopWordsTree *right;
+    int cnt;
+    StopWordsTree *chilren[26];
 } StopWordsTree;
 
 // 变量定义
@@ -76,6 +75,10 @@ int main()
     NonStopWordsCount();
     NonStopWordsSort();
 
+    // 关闭文件
+    fclose(StopWordsFile);
+    fclose(WebFile);
+    fclose(SampleFile);
     return 0;
 }
 // 功能函数实现
@@ -104,123 +107,41 @@ void GetWord(FILE *file)
         word[i] = '\0';
     }
 }
-// 创建停用词树
+// 创建停用词树,用前缀树实现
 void CreateStopWordsTree()
 {
-    char tmpword[20] = {0};
-    StopWordsTree *p;
-    while (fscanf(StopWordsFile, "%s", tmpword) != EOF)
+    StopWordsTree *p = Root;
+    while (fscanf(StopWordsFile, "%s", word) != EOF)
     {
         p = Root;
-        while (p != NULL)
+        for (int i = 0; i < strlen(word); i++)
         {
-            if (strcmp(tmpword, p->word) < 0)
+            int index = word[i] - 'a';
+            if (p->chilren[index] == NULL)
             {
-                if (p->left == NULL)
+                p->chilren[index] = (StopWordsTree *)malloc(sizeof(StopWordsTree));
+                p->chilren[index]->cnt = 0;
+                for (int j = 0; j < 26; j++)
                 {
-                    p->left = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-                    strcpy(p->left->word, tmpword);
-                    p->left->left = NULL;
-                    p->left->right = NULL;
-                    break;
-                }
-                else
-                {
-                    p = p->left;
+                    p->chilren[index]->chilren[j] = NULL;
                 }
             }
-            else if (strcmp(tmpword, p->word) > 0)
-            {
-                if (p->right == NULL)
-                {
-                    p->right = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-                    strcpy(p->right->word, tmpword);
-                    p->right->left = NULL;
-                    p->right->right = NULL;
-                    break;
-                }
-                else
-                {
-                    p = p->right;
-                }
-            }
-            else
-            {
-                break;
-            }
+            p = p->chilren[index];
         }
-        if (p == NULL)
-        {
-            Root = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-            strcpy(Root->word, tmpword);
-            Root->left = NULL;
-            Root->right = NULL;
-        }
+        p->cnt = 1;
     }
 }
 // 判断是否是停用词,是返回1,否返回0
 int IsStopWord()
 {
-    StopWordsTree *p = Root;
-    while (p != NULL)
-    {
-        if (strcmp(word, p->word) < 0)
-        {
-            p = p->left;
-        }
-        else if (strcmp(word, p->word) > 0)
-        {
-            p = p->right;
-        }
-        else
-        {
-            return 1;
-        }
-    }
-    return 0;
 }
 // 非停用词词频统计
 void NonStopWordsCount()
 {
-    int i, j, flag;
-    while (1)
-    {
-        GetWord(WebFile);
-        if (feof(WebFile))
-        {
-            break;
-        }
-        if (IsStopWord() == 0)
-        {
-            flag = 0;
-            for (i = 0; i < 20000; i++)
-            {
-                if (strcmp(word, nonStopWords[i].word) == 0)
-                {
-                    nonStopWords[i].count++;
-                    flag = 1;
-                    break;
-                }
-            }
-            if (flag == 0)
-            {
-                for (i = 0; i < 20000; i++)
-                {
-                    if (nonStopWords[i].count == 0)
-                    {
-                        strcpy(nonStopWords[i].word, word);
-                        nonStopWords[i].count = 1;
-                        nonStopWordsNum++;
-                        break;
-                    }
-                }
-            }
-        }
-    }
 }
 // 非停用词词频排序,并得到特征向量
 // 降序排列,词频相同的按字典序升序排列,这是qsort函数的比较函数
-void cmp(const void *a, const void *b)
+int cmp(const void *a, const void *b)
 {
     NonStopWord *c = (NonStopWord *)a;
     NonStopWord *d = (NonStopWord *)b;
@@ -231,5 +152,14 @@ void cmp(const void *a, const void *b)
     else
     {
         return strcmp(c->word, d->word);
+    }
+}
+void NonStopWordsSort()
+{
+    int i, j;
+    qsort(nonStopWords, nonStopWordsNum, sizeof(NonStopWord), cmp);
+    for (i = 0; i < 5; i++)
+    {
+        printf("%s %d\n", nonStopWords[i].word, nonStopWords[i].count);
     }
 }
