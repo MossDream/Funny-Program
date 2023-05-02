@@ -230,7 +230,7 @@ void WebFeatureVectorCnt(FILE *file)
             if (strlen(word) > 0)
             {
                 int i;
-                for (i = 0; i < 1000; i++)
+                for (i = 0; i < 3; i++)
                 {
                     if (strcmp(nonStopWords[i].word, word) == 0)
                     {
