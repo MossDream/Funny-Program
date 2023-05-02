@@ -7,7 +7,7 @@
 // 非停用词单词信息体
 typedef struct NonStopWord
 {
-    char word[20];
+    char word[50];
     int count;
 } NonStopWord;
 
@@ -15,7 +15,7 @@ typedef struct NonStopWord
 typedef struct StopWordsTree
 {
     int cnt;
-    StopWordsTree *chilren[26];
+    struct StopWordsTree *chilren[26];
 } StopWordsTree;
 
 // 变量定义
@@ -25,7 +25,7 @@ NonStopWord nonStopWords[20000] = {0};
 // 非停用词数量
 int nonStopWordsNum = 0;
 // 单词数组
-char word[20] = {0};
+char word[1000] = {0};
 
 // 停用词文件指针
 FILE *StopWordsFile;
@@ -135,7 +135,9 @@ void CreateStopWordsTree()
             p = p->chilren[index];
         }
         p->cnt = 1;
+        memset(word, 0, sizeof(word));
     }
+    memset(word, 0, sizeof(word));
 }
 // 判断是否是停用词,是返回1,否返回0
 int IsStopWord()
@@ -183,8 +185,10 @@ void NonStopWordsCount()
                 nonStopWordsNum++;
             }
         }
+        memset(word, 0, sizeof(word));
         GetWord(WebFile);
     }
+    memset(word, 0, sizeof(word));
 }
 // 非停用词词频排序,并得到特征向量
 // 降序排列,词频相同的按字典序升序排列,这是qsort函数的比较函数
