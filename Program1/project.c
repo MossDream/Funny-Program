@@ -111,6 +111,12 @@ void GetWord(FILE *file)
 void CreateStopWordsTree()
 {
     StopWordsTree *p = Root;
+    Root = (StopWordsTree *)malloc(sizeof(StopWordsTree));
+    Root->cnt = 0;
+    for (int i = 0; i < 26; i++)
+    {
+        Root->chilren[i] = NULL;
+    }
     while (fscanf(StopWordsFile, "%s", word) != EOF)
     {
         p = Root;
