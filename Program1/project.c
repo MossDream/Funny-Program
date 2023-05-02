@@ -157,3 +157,24 @@ void CreateStopWordsTree()
         }
     }
 }
+// 判断是否是停用词,是返回1,否返回0
+int IsStopWord()
+{
+    StopWordsTree *p = Root;
+    while (p != NULL)
+    {
+        if (strcmp(word, p->word) < 0)
+        {
+            p = p->left;
+        }
+        else if (strcmp(word, p->word) > 0)
+        {
+            p = p->right;
+        }
+        else
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
