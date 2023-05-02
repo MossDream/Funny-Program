@@ -94,7 +94,7 @@ int main()
     CreateStopWordsTree();
     NonStopWordsCount();
     NonStopWordsSort();
-    // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度，,得到权重向量
+    // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
     CreateFeatureVectorTree(1000);
     WebFeatureVectorCnt(WebFile);
     WebFeatureVectorCnt(SampleFile);
