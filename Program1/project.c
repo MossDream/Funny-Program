@@ -106,19 +106,19 @@ void GetWord(FILE *file)
 // 创建停用词树
 void CreateStopWordsTree()
 {
-    char word[20] = {0};
+    char tmpword[20] = {0};
     StopWordsTree *p;
-    while (fscanf(StopWordsFile, "%s", word) != EOF)
+    while (fscanf(StopWordsFile, "%s", tmpword) != EOF)
     {
         p = Root;
         while (p != NULL)
         {
-            if (strcmp(word, p->word) < 0)
+            if (strcmp(tmpword, p->word) < 0)
             {
                 if (p->left == NULL)
                 {
                     p->left = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-                    strcpy(p->left->word, word);
+                    strcpy(p->left->word, tmpword);
                     p->left->left = NULL;
                     p->left->right = NULL;
                     break;
@@ -128,12 +128,12 @@ void CreateStopWordsTree()
                     p = p->left;
                 }
             }
-            else if (strcmp(word, p->word) > 0)
+            else if (strcmp(tmpword, p->word) > 0)
             {
                 if (p->right == NULL)
                 {
                     p->right = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-                    strcpy(p->right->word, word);
+                    strcpy(p->right->word, tmpword);
                     p->right->left = NULL;
                     p->right->right = NULL;
                     break;
@@ -151,7 +151,7 @@ void CreateStopWordsTree()
         if (p == NULL)
         {
             Root = (StopWordsTree *)malloc(sizeof(StopWordsTree));
-            strcpy(Root->word, word);
+            strcpy(Root->word, tmpword);
             Root->left = NULL;
             Root->right = NULL;
         }
