@@ -41,6 +41,8 @@ int sampleNonStopWordsNum = 0;
 int pageNum = 0;
 // 样本网页页数
 int samplePageNum = 0;
+// 读到换页符的标记
+int pageFlag = 0;
 
 // 单词数组
 char word[1000] = {0};
@@ -134,7 +136,7 @@ int main()
         printf("样本网页文件打开失败！\n");
         return 1;
     }
-    HashFile = fopen("hashvalue.txt", "w");
+    HashFile = fopen("hashvalue.txt", "r");
     if (HashFile == NULL)
     {
         printf("Hash表文件打开失败!\n");
@@ -186,6 +188,10 @@ void GetWord(FILE *file)
         }
         else
         {
+            if (ch == '\f')
+            {
+                pageFlag = 1;
+            }
             if (i > 0)
             {
                 word[i] = '\0';
@@ -422,7 +428,13 @@ void WebFeatureVectorCnt(FILE *file)
             while (fgetc(file) != '\f' && !feof(file))
             {
                 fseek(file, -1, SEEK_CUR);
+                pageFlag = 0;
                 GetWord(file);
+                if (pageFlag == 1)
+                {
+                    pageNum++;
+                    pageFlag = 0;
+                }
                 if (strlen(word) > 0)
                 {
                     FeatureVectorTree *p = FeatureVectorRoot;
@@ -454,7 +466,13 @@ void WebFeatureVectorCnt(FILE *file)
             while (fgetc(file) != '\f' && !feof(file))
             {
                 fseek(file, -1, SEEK_CUR);
+                pageFlag = 0;
                 GetWord(file);
+                if (pageFlag == 1)
+                {
+                    samplePageNum++;
+                    pageFlag = 0;
+                }
                 if (strlen(word) > 0)
                 {
                     FeatureVectorTree *p = FeatureVectorRoot;
@@ -658,3 +676,4 @@ void OutputResult()
         tempResult2Num = 0;
         tempResult3Num = 0;
     }
+}
