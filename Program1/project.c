@@ -159,13 +159,7 @@ int main()
         sampleNonStopWordsNum = 0;
         memset(sampleNonStopWords, 0, sizeof(sampleNonStopWords));
     }
-
-    NonStopWordsCount(SampleFile);
-
-    NonStopWordsSort(SampleFile);
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
-    CreateFeatureVectorTree(1000, SampleFile);
-    WebFeatureVectorCnt(1000, SampleFile);
     // 步骤3:计算各网页的指纹
     // 步骤4:计算各网页的汉明距离
     HammingDistanceCnt(16);
