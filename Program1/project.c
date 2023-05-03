@@ -294,7 +294,7 @@ void NonStopWordsCount(FILE *file)
         GetWord(SampleFile);
         while (strlen(word) > 0)
         {
-            if (IsStopWord() == 0)
+            if (IsStopWord() == 0 && strcmp(word, "Sample") != 0)
             {
                 int i;
                 for (i = 0; i < sampleNonStopWordsNum; i++)
