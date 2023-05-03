@@ -18,14 +18,6 @@ typedef struct StopWordsTree
     struct StopWordsTree *chilren[26];
 } StopWordsTree;
 
-// 特征向量树，用前缀树实现
-typedef struct FeatureVectorTree
-{
-    int cnt;
-    int id;
-    struct FeatureVectorTree *chilren[26];
-} FeatureVectorTree;
-
 // 变量定义
 
 // 原网页的非停用词单词数组
@@ -91,11 +83,6 @@ FILE *ResultFile;
 
 // 停用词树根节点
 StopWordsTree *StopWordsRoot = NULL;
-// 特征向量树根节点
-// 原网页特征向量树根节点
-FeatureVectorTree *FeatureVectorRoot = NULL;
-// 样本网页特征向量树根节点
-FeatureVectorTree *sampleFeatureVectorRoot = NULL;
 
 // 功能函数声明
 // 读取一个单词
@@ -106,14 +93,12 @@ void CreateStopWordsTree();
 int IsStopWord();
 // 非停用词词频统计
 void NonStopWordsCount(FILE *file);
-// 非停用词词频排序
+// 非停用词词频排序,（排序后前N个信息体就是特征向量）
 void NonStopWordsSort(FILE *file);
-// 创建特征向量树（排序后前N个信息体就是特征向量）
-void CreateFeatureVectorTree(int N, FILE *file);
 //  统计每个网页（文本）的特征向量中每个特征（单词）的频度
-void WebFeatureVectorCnt(FILE *file);
+void WebFeatureVectorCnt(int N, FILE *file);
 // 计算网页指纹
-void WebFingerprintCnt(int N, int M);
+void WebFingerprintCnt(int N, int M, FILE *file);
 // 计算汉明距离
 void HammingDistanceCnt(int M);
 // 输出结果
@@ -159,9 +144,10 @@ int main()
         fscanf(WebFile, "%s", webId[pageNum++]);
         NonStopWordsCount(WebFile);
         NonStopWordsSort(WebFile);
-        CreateFeatureVectorTree(1000, WebFile);
-        WebFeatureVectorCnt(WebFile);
+        WebFeatureVectorCnt(1000, WebFile);
         WebFingerprintCnt(1000, 16);
+        nonStopWordsNum = 0;
+        memset(nonStopWords, 0, sizeof(nonStopWords));
     }
 
     NonStopWordsCount(SampleFile);
@@ -169,7 +155,7 @@ int main()
     NonStopWordsSort(SampleFile);
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
     CreateFeatureVectorTree(1000, SampleFile);
-    WebFeatureVectorCnt(SampleFile);
+    WebFeatureVectorCnt(1000, SampleFile);
     // 步骤3:计算各网页的指纹
     // 步骤4:计算各网页的汉明距离
     HammingDistanceCnt(16);
@@ -358,149 +344,22 @@ void NonStopWordsSort(FILE *file)
         qsort(sampleNonStopWords, sampleNonStopWordsNum, sizeof(NonStopWord), cmp);
     }
 }
-// 创建特征向量树,用前缀树实现
-void CreateFeatureVectorTree(int N, FILE *file)
-{
-    if (file == WebFile)
-    {
-        FeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
-        FeatureVectorRoot->cnt = 0;
-        FeatureVectorRoot->id = 0;
-        for (int i = 0; i < 26; i++)
-        {
-            FeatureVectorRoot->chilren[i] = NULL;
-        }
-        FeatureVectorTree *p = FeatureVectorRoot;
-        for (int i = 0; i < N; i++)
-        {
-            p = FeatureVectorRoot;
-            for (int j = 0; j < strlen(nonStopWords[i].word); j++)
-            {
-                int index = nonStopWords[i].word[j] - 'a';
-                if (p->chilren[index] == NULL)
-                {
-                    p->chilren[index] = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
-                    p->chilren[index]->cnt = 0;
-                    for (int k = 0; k < 26; k++)
-                    {
-                        p->chilren[index]->chilren[k] = NULL;
-                    }
-                }
-                p = p->chilren[index];
-            }
-            p->cnt = 1;
-            p->id = i;
-        }
-    }
-    else if (file == SampleFile)
-    {
-        sampleFeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
-        sampleFeatureVectorRoot->cnt = 0;
-        sampleFeatureVectorRoot->id = 0;
-        for (int i = 0; i < 26; i++)
-        {
-            sampleFeatureVectorRoot->chilren[i] = NULL;
-        }
-        FeatureVectorTree *p = sampleFeatureVectorRoot;
-        for (int i = 0; i < N; i++)
-        {
-            p = sampleFeatureVectorRoot;
-            for (int j = 0; j < strlen(sampleNonStopWords[i].word); j++)
-            {
-                int index = sampleNonStopWords[i].word[j] - 'a';
-                if (p->chilren[index] == NULL)
-                {
-                    p->chilren[index] = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
-                    p->chilren[index]->cnt = 0;
-                    for (int k = 0; k < 26; k++)
-                    {
-                        p->chilren[index]->chilren[k] = NULL;
-                    }
-                }
-                p = p->chilren[index];
-            }
-            p->cnt = 1;
-            p->id = i;
-        }
-    }
-}
 // 统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
-void WebFeatureVectorCnt(FILE *file)
+void WebFeatureVectorCnt(int N, FILE *file)
 {
+    int i = 0;
     if (file == WebFile)
     {
-        fseek(file, 0, SEEK_SET);
-        pageNum = 0;
-        while (!feof(file))
+        for (i = 0; i < N; i++)
         {
-            while (fgetc(file) != '\f' && !feof(file))
-            {
-                fseek(file, -1, SEEK_CUR);
-                pageFlag = 0;
-                GetWord(file);
-                if (pageFlag == 1)
-                {
-                    pageNum++;
-                    pageFlag = 0;
-                }
-                if (strlen(word) > 0)
-                {
-                    FeatureVectorTree *p = FeatureVectorRoot;
-                    for (int i = 0; i < strlen(word); i++)
-                    {
-                        int index = word[i] - 'a';
-                        if (p->chilren[index] == NULL)
-                        {
-                            break;
-                        }
-                        p = p->chilren[index];
-                    }
-                    if (p->cnt == 1)
-                    {
-                        weight[pageNum][p->id]++;
-                    }
-                }
-                memset(word, 0, sizeof(word));
-            }
-            pageNum++;
+            weight[pageNum][i] = nonStopWords[i].count;
         }
     }
     else if (file == SampleFile)
     {
-        fseek(file, 0, SEEK_SET);
-        samplePageNum = 0;
-        while (!feof(file))
+        for (i = 0; i < N; i++)
         {
-            while (fgetc(file) != '\f' && !feof(file))
-            {
-                fseek(file, -1, SEEK_CUR);
-                pageFlag = 0;
-                GetWord(file);
-                if (pageFlag == 1)
-                {
-                    samplePageNum++;
-                    pageFlag = 0;
-                }
-                if (strlen(word) > 0)
-                {
-                    FeatureVectorTree *p = sampleFeatureVectorRoot;
-                    for (int i = 0; i < strlen(word); i++)
-                    {
-                        int index = word[i] - 'a';
-                        if (p->chilren[index] == NULL)
-                        {
-                            break;
-                        }
-                        p = p->chilren[index];
-                    }
-                    if (p->cnt == 1)
-                    {
-                        sampleWeight[samplePageNum][p->id]++;
-                    }
-                }
-                memset(word, 0, sizeof(word));
-            }
-            samplePageNum++;
+            sampleWeight[samplePageNum][i] = sampleNonStopWords[i].count;
         }
     }
 }
