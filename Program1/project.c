@@ -96,7 +96,7 @@ void WebFeatureVectorCnt(FILE *file);
 // 计算网页指纹
 void WebFingerprintCnt(int N, int M);
 // 计算汉明距离
-void HammingDistanceCnt();
+void HammingDistanceCnt(int M);
 // 主程序实现
 int main()
 {
@@ -139,7 +139,7 @@ int main()
     // 步骤3:计算各网页的指纹
     WebFingerprintCnt(1000, 16);
     // 步骤4:计算各网页的汉明距离
-    HammingDistanceCnt();
+    HammingDistanceCnt(16);
 
     // 关闭文件
     fclose(StopWordsFile);
@@ -526,6 +526,29 @@ void WebFingerprintCnt(int N, int M)
             {
                 sampleFingerprint[i][j] = 0;
             }
+        }
+    }
+}
+// 计算各网页的汉明距离
+void HammingDistanceCnt(int M)
+{
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int distance = 0;
+    for (i = 0; i < samplePageNum; i++)
+    {
+        for (j = 0; j < pageNum; j++)
+        {
+            distance = 0;
+            for (k = 0; k < M; k++)
+            {
+                if (sampleFingerprint[i][k] != fingerprint[j][k])
+                {
+                    distance++;
+                }
+            }
+            hammingDistance[i][j] = distance;
         }
     }
 }
