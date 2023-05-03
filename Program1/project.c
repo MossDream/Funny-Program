@@ -61,6 +61,11 @@ int sampleFingerprint[20000][16] = {0};
 // 横坐标是样本网页编号数，纵坐标是原网页编号数
 int hammingDistance[20000][20000] = {0};
 
+// 临时储存输出结果
+int tempResult[5][20000] = {0};
+// 临时储存输出结果的网页编号数量
+int tempResultNum = 0;
+
 // 停用词文件指针
 FILE *StopWordsFile;
 // 已有网页文件指针
@@ -69,6 +74,8 @@ FILE *WebFile;
 FILE *SampleFile;
 // Hash表文件指针
 FILE *HashFile;
+// 输出结果文件指针
+FILE *ResultFile;
 
 // 停用词树根节点
 StopWordsTree *StopWordsRoot = NULL;
@@ -127,6 +134,12 @@ int main()
         printf("Hash表文件打开失败!\n");
         return 1;
     }
+    ResultFile = fopen("result.txt", "w");
+    if (ResultFile == NULL)
+    {
+        printf("输出结果文件打开失败!\n");
+        return 1;
+    }
     // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
     CreateStopWordsTree();
     NonStopWordsCount(WebFile);
@@ -150,6 +163,7 @@ int main()
     fclose(WebFile);
     fclose(SampleFile);
     fclose(HashFile);
+    fclose(ResultFile);
     return 0;
 }
 // 功能函数实现
@@ -553,6 +567,27 @@ void HammingDistanceCnt(int M)
                 }
             }
             hammingDistance[i][j] = distance;
+        }
+    }
+}
+// 按要求输出结果
+void OutputResult()
+{
+    int i = 0;
+    int j = 0;
+    int flag0 = 0;
+    int flag1 = 0;
+    int flag2 = 0;
+    for (i = 0; i < samplePageNum; i++)
+    {
+        printf("Sample-%d\n", i + 1);
+        fprintf(ResultFile, "Sample-%d\n", i + 1);
+        for (j = 0; j < pageNum; j++)
+        {
+            if (hammingDistance[i][j] == 0)
+            {
+                tempResult[0][j]
+            }
         }
     }
 }
