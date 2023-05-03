@@ -145,9 +145,19 @@ int main()
         NonStopWordsCount(WebFile);
         NonStopWordsSort(WebFile);
         WebFeatureVectorCnt(1000, WebFile);
-        WebFingerprintCnt(1000, 16);
+        WebFingerprintCnt(1000, 16, WebFile);
         nonStopWordsNum = 0;
         memset(nonStopWords, 0, sizeof(nonStopWords));
+    }
+    while (!feof(SampleFile))
+    {
+        fscanf(SampleFile, "%s", sampleWebId[samplePageNum++]);
+        NonStopWordsCount(SampleFile);
+        NonStopWordsSort(SampleFile);
+        WebFeatureVectorCnt(1000, SampleFile);
+        WebFingerprintCnt(1000, 16, SampleFile);
+        sampleNonStopWordsNum = 0;
+        memset(sampleNonStopWords, 0, sizeof(sampleNonStopWords));
     }
 
     NonStopWordsCount(SampleFile);
@@ -364,67 +374,74 @@ void WebFeatureVectorCnt(int N, FILE *file)
     }
 }
 // 计算网页指纹
-void WebFingerprintCnt(int N, int M)
+void WebFingerprintCnt(int N, int M, FILE *file)
 {
     int i = 0;
     int j = 0;
     int k = 0;
     int finger = 0;
     char tempHash[500] = {0};
-    for (i = 0; i < N; i++)
+    if (file == WebFile)
     {
-        fgets(tempHash, M * sizeof(char), HashFile);
-        for (j = 0; j < M; j++)
+        for (i = 0; i < N; i++)
         {
-            if (tempHash[j] == '1')
+            fgets(tempHash, M * sizeof(char), HashFile);
+            for (j = 0; j < M; j++)
             {
-                fingerprint[pageNum][j] += weight[pageNum][i];
+                if (tempHash[j] == '1')
+                {
+                    fingerprint[pageNum][j] += weight[pageNum][i];
+                }
+                else if (tempHash[j] == '0')
+                {
+                    fingerprint[pageNum][j] -= weight[pageNum][i];
+                }
             }
-            else if (tempHash[j] == '0')
+            memset(tempHash, 0, sizeof(tempHash));
+        }
+        for (i = 0; i < M; i++)
+        {
+            if (fingerprint[pageNum][i] > 0)
             {
-                fingerprint[pageNum][j] -= weight[pageNum][i];
+                fingerprint[pageNum][i] = 1;
+            }
+            else
+            {
+                fingerprint[pageNum][i] = 0;
             }
         }
-        memset(tempHash, 0, sizeof(tempHash));
+        fseek(HashFile, 0, SEEK_SET);
     }
-    for (i = 0; i < M; i++)
+    else if (file == SampleFile)
     {
-        if (fingerprint[pageNum][i] > 0)
+        for (i = 0; i < N; i++)
         {
-            fingerprint[pageNum][i] = 1;
-        }
-        else
-        {
-            fingerprint[pageNum][i] = 0;
-        }
-    }
-    fseek(HashFile, 0, SEEK_SET);
-    for (i = 0; i < N; i++)
-    {
-        fgets(tempHash, M * sizeof(char), HashFile);
-        for (j = 0; j < M; j++)
-        {
-            if (tempHash[j] == '1')
+            fgets(tempHash, M * sizeof(char), HashFile);
+            for (j = 0; j < M; j++)
             {
-                sampleFingerprint[samplePageNum][j] += sampleWeight[samplePageNum][i];
+                if (tempHash[j] == '1')
+                {
+                    sampleFingerprint[samplePageNum][j] += sampleWeight[samplePageNum][i];
+                }
+                else if (tempHash[j] == '0')
+                {
+                    sampleFingerprint[samplePageNum][j] -= sampleWeight[samplePageNum][i];
+                }
             }
-            else if (tempHash[j] == '0')
+            memset(tempHash, 0, sizeof(tempHash));
+        }
+        for (i = 0; i < M; i++)
+        {
+            if (sampleFingerprint[samplePageNum][i] > 0)
             {
-                sampleFingerprint[samplePageNum][j] -= sampleWeight[samplePageNum][i];
+                sampleFingerprint[samplePageNum][i] = 1;
+            }
+            else
+            {
+                sampleFingerprint[samplePageNum][i] = 0;
             }
         }
-        memset(tempHash, 0, sizeof(tempHash));
-    }
-    for (i = 0; i < M; i++)
-    {
-        if (sampleFingerprint[samplePageNum][i] > 0)
-        {
-            sampleFingerprint[samplePageNum][i] = 1;
-        }
-        else
-        {
-            sampleFingerprint[samplePageNum][i] = 0;
-        }
+        fseek(HashFile, 0, SEEK_SET);
     }
 }
 // 计算各网页的汉明距离
