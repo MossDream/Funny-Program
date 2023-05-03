@@ -475,7 +475,7 @@ void WebFeatureVectorCnt(FILE *file)
                 }
                 if (strlen(word) > 0)
                 {
-                    FeatureVectorTree *p = FeatureVectorRoot;
+                    FeatureVectorTree *p = sampleFeatureVectorRoot;
                     for (int i = 0; i < strlen(word); i++)
                     {
                         int index = word[i] - 'a';
