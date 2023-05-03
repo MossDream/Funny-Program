@@ -601,7 +601,10 @@ void OutputResult()
     int j = 0;
     for (i = 0; i < samplePageNum; i++)
     {
-        printf("Sample-%d\n", i + 1);
+        if (i == 0)
+        {
+            printf("Sample-%d\n", i + 1);
+        }
         fprintf(ResultFile, "Sample-%d\n", i + 1);
         for (j = 0; j < pageNum; j++)
         {
@@ -624,50 +627,86 @@ void OutputResult()
         }
         if (tempResult0Num > 0)
         {
-            printf("0:");
+            if (i == 0)
+            {
+                printf("0:");
+            }
             fprintf(ResultFile, "0:");
             for (j = 0; j < tempResult0Num; j++)
             {
-                printf("1-%d ", tempResult[0][j]);
+                if (i == 0)
+                {
+                    printf("1-%d ", tempResult[0][j]);
+                }
                 fprintf(ResultFile, "1-%d ", tempResult[0][j]);
             }
-            printf("\n");
+            if (i == 0)
+            {
+                printf("\n");
+            }
             fprintf(ResultFile, "\n");
         }
         if (tempResult1Num > 0)
         {
-            printf("1:");
+            if (i == 0)
+            {
+                printf("1:");
+            }
             fprintf(ResultFile, "1:");
             for (j = 0; j < tempResult1Num; j++)
             {
-                printf("1-%d ", tempResult[1][j]);
+                if (i == 0)
+                {
+                    printf("1-%d ", tempResult[1][j]);
+                }
                 fprintf(ResultFile, "1-%d ", tempResult[1][j]);
             }
-            printf("\n");
+            if (i == 0)
+            {
+                printf("\n");
+            }
             fprintf(ResultFile, "\n");
         }
         if (tempResult2Num > 0)
         {
-            printf("2:");
+            if (i == 0)
+            {
+                printf("2:");
+            }
             fprintf(ResultFile, "2:");
             for (j = 0; j < tempResult2Num; j++)
             {
-                printf("1-%d ", tempResult[2][j]);
+                if (i == 0)
+                {
+                    printf("1-%d ", tempResult[2][j]);
+                }
                 fprintf(ResultFile, "1-%d ", tempResult[2][j]);
             }
-            printf("\n");
+            if (i == 0)
+            {
+                printf("\n");
+            }
             fprintf(ResultFile, "\n");
         }
         if (tempResult3Num > 0)
         {
-            printf("3:");
+            if (i == 0)
+            {
+                printf("3:");
+            }
             fprintf(ResultFile, "3:");
             for (j = 0; j < tempResult3Num; j++)
             {
-                printf("1-%d ", tempResult[3][j]);
+                if (i == 0)
+                {
+                    printf("1-%d ", tempResult[3][j]);
+                }
                 fprintf(ResultFile, "1-%d ", tempResult[3][j]);
             }
-            printf("\n");
+            if (i == 0)
+            {
+                printf("\n");
+            }
             fprintf(ResultFile, "\n");
         }
         memset(tempResult, 0, sizeof(tempResult));
