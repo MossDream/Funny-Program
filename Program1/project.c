@@ -46,6 +46,10 @@ int pageFlag = 0;
 
 // 单词数组
 char word[1000] = {0};
+// 原网页编号数组
+char webId[20000][10] = {0};
+// 样本网页编号数组
+char sampleWebId[20000][10] = {0};
 
 // 各网页权重向量构成的二维数组
 // 原网页权重向量
@@ -150,17 +154,23 @@ int main()
     }
     // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
     CreateStopWordsTree();
-    NonStopWordsCount(WebFile);
+    while (!feof(WebFile))
+    {
+        fscanf(WebFile, "%s", webId[pageNum++]);
+        NonStopWordsCount(WebFile);
+        NonStopWordsSort(WebFile);
+        CreateFeatureVectorTree(1000, WebFile);
+        WebFeatureVectorCnt(WebFile);
+        WebFingerprintCnt(1000, 16);
+    }
+
     NonStopWordsCount(SampleFile);
-    NonStopWordsSort(WebFile);
+
     NonStopWordsSort(SampleFile);
     // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
-    CreateFeatureVectorTree(1000, WebFile);
     CreateFeatureVectorTree(1000, SampleFile);
-    WebFeatureVectorCnt(WebFile);
     WebFeatureVectorCnt(SampleFile);
     // 步骤3:计算各网页的指纹
-    WebFingerprintCnt(1000, 16);
     // 步骤4:计算各网页的汉明距离
     HammingDistanceCnt(16);
     // 步骤5:按要求输出结果
@@ -182,22 +192,17 @@ void GetWord(FILE *file)
     char ch;
     while ((ch = fgetc(file)) != EOF)
     {
+        if (ch == '\f')
+        {
+            pageFlag = 1;
+            return;
+        }
         if (isalpha(ch))
         {
             word[i++] = tolower(ch);
         }
         else
         {
-            if (ch == '\f')
-            {
-                pageFlag = 1;
-                if (i > 0)
-                {
-                    word[i] = '\0';
-                    return;
-                }
-                return;
-            }
             if (i > 0)
             {
                 word[i] = '\0';
@@ -293,12 +298,13 @@ void NonStopWordsCount(FILE *file)
             memset(word, 0, sizeof(word));
             GetWord(WebFile);
         }
+        pageFlag = 0;
         memset(word, 0, sizeof(word));
     }
     else if (file == SampleFile)
     {
         GetWord(SampleFile);
-        while (strlen(word) > 0)
+        while (strlen(word) > 0 && !feof(SampleFile) && pageFlag == 0)
         {
             if (IsStopWord() == 0 && strcmp(word, "Sample") != 0)
             {
@@ -321,12 +327,8 @@ void NonStopWordsCount(FILE *file)
             memset(word, 0, sizeof(word));
             GetWord(SampleFile);
         }
+        pageFlag = 0;
         memset(word, 0, sizeof(word));
-    }
-    else
-    {
-        printf("文件打开失败！\n");
-        return;
     }
 }
 // 非停用词词频排序,降序排列,词频相同的按字典序升序排列
