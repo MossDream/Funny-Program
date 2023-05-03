@@ -63,8 +63,14 @@ int hammingDistance[20000][20000] = {0};
 
 // 临时储存输出结果
 int tempResult[5][20000] = {0};
-// 临时储存输出结果的网页编号数量
-int tempResultNum = 0;
+// 临时储存输出结果汉明距离为0的网页编号数量
+int tempResult0Num = 0;
+// 临时储存输出结果汉明距离为1的网页编号数量
+int tempResult1Num = 0;
+// 临时储存输出结果汉明距离为2的网页编号数量
+int tempResult2Num = 0;
+// 临时储存输出结果汉明距离为3的网页编号数量
+int tempResult3Num = 0;
 
 // 停用词文件指针
 FILE *StopWordsFile;
@@ -575,9 +581,6 @@ void OutputResult()
 {
     int i = 0;
     int j = 0;
-    int flag0 = 0;
-    int flag1 = 0;
-    int flag2 = 0;
     for (i = 0; i < samplePageNum; i++)
     {
         printf("Sample-%d\n", i + 1);
@@ -586,8 +589,72 @@ void OutputResult()
         {
             if (hammingDistance[i][j] == 0)
             {
-                tempResult[0][j]
+                tempResult[0][tempResult0Num++] = j + 1;
+            }
+            else if (hammingDistance[i][j] == 1)
+            {
+                tempResult[1][tempResult1Num++] = j + 1;
+            }
+            else if (hammingDistance[i][j] == 2)
+            {
+                tempResult[2][tempResult2Num++] = j + 1;
+            }
+            else if (hammingDistance[i][j] == 3)
+            {
+                tempResult[3][tempResult3Num++] = j + 1;
             }
         }
+        if (tempResult0Num > 0)
+        {
+            printf("0:");
+            fprintf(ResultFile, "0:");
+            for (j = 0; j < tempResult0Num; j++)
+            {
+                printf("1-%d ", tempResult[0][j]);
+                fprintf(ResultFile, "1-%d ", tempResult[0][j]);
+            }
+            printf("\n");
+            fprintf(ResultFile, "\n");
+        }
+        if (tempResult1Num > 0)
+        {
+            printf("1:");
+            fprintf(ResultFile, "1:");
+            for (j = 0; j < tempResult1Num; j++)
+            {
+                printf("1-%d ", tempResult[1][j]);
+                fprintf(ResultFile, "1-%d ", tempResult[1][j]);
+            }
+            printf("\n");
+            fprintf(ResultFile, "\n");
+        }
+        if (tempResult2Num > 0)
+        {
+            printf("2:");
+            fprintf(ResultFile, "2:");
+            for (j = 0; j < tempResult2Num; j++)
+            {
+                printf("1-%d ", tempResult[2][j]);
+                fprintf(ResultFile, "1-%d ", tempResult[2][j]);
+            }
+            printf("\n");
+            fprintf(ResultFile, "\n");
+        }
+        if (tempResult3Num > 0)
+        {
+            printf("3:");
+            fprintf(ResultFile, "3:");
+            for (j = 0; j < tempResult3Num; j++)
+            {
+                printf("1-%d ", tempResult[3][j]);
+                fprintf(ResultFile, "1-%d ", tempResult[3][j]);
+            }
+            printf("\n");
+            fprintf(ResultFile, "\n");
+        }
+        memset(tempResult, 0, sizeof(tempResult));
+        tempResult0Num = 0;
+        tempResult1Num = 0;
+        tempResult2Num = 0;
+        tempResult3Num = 0;
     }
-}
