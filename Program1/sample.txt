@@ -1,4 +1,3 @@
-
 Sample-1
 1-1
 Xref: cantaloupe.srv.cs.cmu.edu alt.atheism:49960 alt.atheism.moderated:713 news.answers:7054 alt.answers:126
@@ -1127,4 +1126,3 @@ and it will mail back a reply.
 
 mathew
 
-
