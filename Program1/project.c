@@ -512,71 +512,59 @@ void WebFingerprintCnt(int N, int M)
     int k = 0;
     int finger = 0;
     char tempHash[500] = {0};
-    for (i = 0; i < pageNum; i++)
+    for (i = 0; i < N; i++)
     {
-        for (j = 0; j < N; j++)
-        {
-            fgets(tempHash, M * sizeof(char), HashFile);
-            for (k = 0; k < M; k++)
-            {
-                if (tempHash[k] == '1')
-                {
-                    fingerprint[i][k] += weight[i][j];
-                }
-                else if (tempHash[k] == '0')
-                {
-                    fingerprint[i][k] -= weight[i][j];
-                }
-            }
-            memset(tempHash, 0, sizeof(tempHash));
-        }
-    }
-    for (i = 0; i < pageNum; i++)
-    {
+        fgets(tempHash, M * sizeof(char), HashFile);
         for (j = 0; j < M; j++)
         {
-            if (fingerprint[i][j] > 0)
+            if (tempHash[j] == '1')
             {
-                fingerprint[i][j] = 1;
+                fingerprint[pageNum][j] += weight[pageNum][i];
             }
-            else
+            else if (tempHash[j] == '0')
             {
-                fingerprint[i][j] = 0;
+                fingerprint[pageNum][j] -= weight[pageNum][i];
             }
+        }
+        memset(tempHash, 0, sizeof(tempHash));
+    }
+    for (i = 0; i < M; i++)
+    {
+        if (fingerprint[pageNum][i] > 0)
+        {
+            fingerprint[pageNum][i] = 1;
+        }
+        else
+        {
+            fingerprint[pageNum][i] = 0;
         }
     }
     fseek(HashFile, 0, SEEK_SET);
-    for (i = 0; i < samplePageNum; i++)
+    for (i = 0; i < N; i++)
     {
-        for (j = 0; j < N; j++)
-        {
-            fgets(tempHash, M * sizeof(char), HashFile);
-            for (k = 0; k < M; k++)
-            {
-                if (tempHash[k] == '1')
-                {
-                    sampleFingerprint[i][k] += sampleWeight[i][j];
-                }
-                else if (tempHash[k] == '0')
-                {
-                    sampleFingerprint[i][k] -= sampleWeight[i][j];
-                }
-            }
-            memset(tempHash, 0, sizeof(tempHash));
-        }
-    }
-    for (i = 0; i < samplePageNum; i++)
-    {
+        fgets(tempHash, M * sizeof(char), HashFile);
         for (j = 0; j < M; j++)
         {
-            if (sampleFingerprint[i][j] > 0)
+            if (tempHash[j] == '1')
             {
-                sampleFingerprint[i][j] = 1;
+                sampleFingerprint[samplePageNum][j] += sampleWeight[samplePageNum][i];
             }
-            else
+            else if (tempHash[j] == '0')
             {
-                sampleFingerprint[i][j] = 0;
+                sampleFingerprint[samplePageNum][j] -= sampleWeight[samplePageNum][i];
             }
+        }
+        memset(tempHash, 0, sizeof(tempHash));
+    }
+    for (i = 0; i < M; i++)
+    {
+        if (sampleFingerprint[samplePageNum][i] > 0)
+        {
+            sampleFingerprint[samplePageNum][i] = 1;
+        }
+        else
+        {
+            sampleFingerprint[samplePageNum][i] = 0;
         }
     }
 }
