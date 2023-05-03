@@ -473,4 +473,51 @@ void WebFingerprintCnt(int N, int M)
             memset(tempHash, 0, sizeof(tempHash));
         }
     }
+    for (i = 0; i < pageNum; i++)
+    {
+        for (j = 0; j < M; j++)
+        {
+            if (fingerprint[i][j] > 0)
+            {
+                fingerprint[i][j] = 1;
+            }
+            else
+            {
+                fingerprint[i][j] = 0;
+            }
+        }
+    }
+    for (i = 0; i < samplePageNum; i++)
+    {
+        for (j = 0; j < N; j++)
+        {
+            fscanf(HashFile, "%s", tempHash);
+            for (k = 0; k < M; k++)
+            {
+                if (tempHash[k] == '1')
+                {
+                    sampleFingerprint[i][k] += sampleWeight[i][j];
+                }
+                else if (tempHash[k] == '0')
+                {
+                    sampleFingerprint[i][k] -= sampleWeight[i][j];
+                }
+            }
+            memset(tempHash, 0, sizeof(tempHash));
+        }
+    }
+    for (i = 0; i < samplePageNum; i++)
+    {
+        for (j = 0; j < M; j++)
+        {
+            if (sampleFingerprint[i][j] > 0)
+            {
+                sampleFingerprint[i][j] = 1;
+            }
+            else
+            {
+                sampleFingerprint[i][j] = 0;
+            }
+        }
+    }
 }
