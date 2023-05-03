@@ -191,6 +191,12 @@ void GetWord(FILE *file)
             if (ch == '\f')
             {
                 pageFlag = 1;
+                if (i > 0)
+                {
+                    word[i] = '\0';
+                    return;
+                }
+                return;
             }
             if (i > 0)
             {
@@ -264,7 +270,7 @@ void NonStopWordsCount(FILE *file)
     if (file == WebFile)
     {
         GetWord(WebFile);
-        while (strlen(word) > 0)
+        while (strlen(word) > 0 && !feof(WebFile) && pageFlag == 0)
         {
             if (IsStopWord() == 0)
             {
