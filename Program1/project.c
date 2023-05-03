@@ -57,6 +57,10 @@ int fingerprint[20000][16] = {0};
 // 样本网页指纹
 int sampleFingerprint[20000][16] = {0};
 
+// 样本网页对原网页的汉明距离构成的二维数组
+// 横坐标是样本网页编号数，纵坐标是原网页编号数
+int hammingDistance[20000][20000] = {0};
+
 // 停用词文件指针
 FILE *StopWordsFile;
 // 已有网页文件指针
@@ -91,6 +95,8 @@ void CreateFeatureVectorTree(int N, FILE *file);
 void WebFeatureVectorCnt(FILE *file);
 // 计算网页指纹
 void WebFingerprintCnt(int N, int M);
+// 计算汉明距离
+void HammingDistanceCnt();
 // 主程序实现
 int main()
 {
@@ -116,7 +122,7 @@ int main()
     HashFile = fopen("hashvalue.txt", "w");
     if (HashFile == NULL)
     {
-        printf("Hash表文件打开失败！\n");
+        printf("Hash表文件打开失败!\n");
         return 1;
     }
     // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
@@ -132,6 +138,8 @@ int main()
     WebFeatureVectorCnt(SampleFile);
     // 步骤3:计算各网页的指纹
     WebFingerprintCnt(1000, 16);
+    // 步骤4:计算各网页的汉明距离
+    HammingDistanceCnt();
 
     // 关闭文件
     fclose(StopWordsFile);
