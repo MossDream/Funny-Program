@@ -508,7 +508,7 @@ void WebFingerprintCnt(int N, int M)
     {
         for (j = 0; j < N; j++)
         {
-            fscanf(HashFile, "%s", tempHash);
+            fgets(tempHash, M * sizeof(char), HashFile);
             for (k = 0; k < M; k++)
             {
                 if (tempHash[k] == '1')
@@ -537,11 +537,12 @@ void WebFingerprintCnt(int N, int M)
             }
         }
     }
+    fseek(HashFile, 0, SEEK_SET);
     for (i = 0; i < samplePageNum; i++)
     {
         for (j = 0; j < N; j++)
         {
-            fscanf(HashFile, "%s", tempHash);
+            fgets(tempHash, M * sizeof(char), HashFile);
             for (k = 0; k < M; k++)
             {
                 if (tempHash[k] == '1')
