@@ -194,10 +194,12 @@ void GetWebId(FILE *file)
     {
         int num = 0;
         int flag = 0;
+        // 读取第一个网页
         fgets(webId[num++], 200, file);
         strtok(webId[num - 1], "\n");
         strtok(webId[num - 1], "\r");
         char tmp[200] = {0};
+        // 以换页符为标志读取后续的网页
         while (fgets(tmp, 200, file) != NULL)
         {
             if (flag == 1)
@@ -368,6 +370,7 @@ int cmp(const void *a, const void *b)
         return strcmp(c->word, d->word);
     }
 }
+// 这是快速排序函数
 void NonStopWordsSort()
 {
     int i, j;
