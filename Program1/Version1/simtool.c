@@ -37,13 +37,17 @@ int nonStopWordsNum = 0;
 int pageNum = 0;
 // 样本网页页数
 int samplePageNum = 0;
+
 // 读到换页符的标记
 int pageFlag = 0;
 
 // 单词数组
 char word[100] = {0};
 
+// 网页标识信息的二维数组
+//  原网页标识信息
 char webId[8000][10] = {0};
+// 样本网页标识信息
 char sampleWebId[8000][10] = {0};
 
 // 各网页权重向量构成的二维数组
@@ -59,18 +63,18 @@ int fingerprint[8000][130] = {0};
 int sampleFingerprint[8000][130] = {0};
 
 // 样本网页对原网页的汉明距离构成的二维数组
-// 横坐标是样本网页编号数，纵坐标是原网页编号数
+// 横坐标是样本网页编号数（第1个网页编号0，以此类推），纵坐标是原网页编号数
 int hammingDistance[8000][8000] = {0};
 
 // 临时储存输出结果
 int tempResult[5][8000] = {0};
-// 临时储存输出结果汉明距离为0的网页编号数量
+// 临时储存输出结果汉明距离为0的原网页数量
 int tempResult0Num = 0;
-// 临时储存输出结果汉明距离为1的网页编号数量
+// 临时储存输出结果汉明距离为1的原网页数量
 int tempResult1Num = 0;
-// 临时储存输出结果汉明距离为2的网页编号数量
+// 临时储存输出结果汉明距离为2的原网页数量
 int tempResult2Num = 0;
-// 临时储存输出结果汉明距离为3的网页编号数量
+// 临时储存输出结果汉明距离为3的原网页数量
 int tempResult3Num = 0;
 
 // 停用词文件指针
@@ -90,6 +94,7 @@ StopWordsTree *StopWordsRoot = NULL;
 FeatureVectorTree *FeatureVectorRoot = NULL;
 
 // 功能函数声明
+
 // 读取一个单词
 void GetWord(FILE *file);
 // 读取网页标识信息
@@ -99,7 +104,7 @@ void CreateStopWordsTree();
 // 判断是否是停用词
 int IsStopWord();
 // 非停用词词频统计
-void NonStopWordsCount();
+void NonStopWordsCnt();
 // 非停用词词频排序
 void NonStopWordsSort();
 // 创建特征向量树（排序后前N个信息体就是特征向量）
@@ -112,11 +117,14 @@ void WebFingerprintCnt(int N, int M);
 void HammingDistanceCnt(int M);
 // 输出结果
 void OutputResult();
+
 // 主程序实现
 int main(int argc, char **argv)
 {
+    // 命令行输入形式应该是：simtool N M
     if (argc == 3)
     {
+        // 字符串转成整数，得到N、M的值
         int N = atoi(argv[1]);
         int M = atoi(argv[2]);
         // 步骤0：打开停用词文件和网页文件
@@ -154,7 +162,7 @@ int main(int argc, char **argv)
         GetWebId(SampleFile);
         // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
         CreateStopWordsTree();
-        NonStopWordsCount();
+        NonStopWordsCnt();
         NonStopWordsSort();
         // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
         CreateFeatureVectorTree(N);
@@ -315,7 +323,7 @@ int IsStopWord()
     }
 }
 // 非停用词词频统计
-void NonStopWordsCount()
+void NonStopWordsCnt()
 {
     GetWord(WebFile);
     while (strlen(word) > 0)
