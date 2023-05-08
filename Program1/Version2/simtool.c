@@ -182,63 +182,6 @@ int main(int argc, char **argv)
     return 0;
 }
 // 功能函数实现
-
-// 读取网页标识信息
-void GetWebId(FILE *file)
-{
-    if (file == WebFile)
-    {
-        int num = 0;
-        int flag = 0;
-        // 读取第一个网页
-        fgets(webId[num++], 200, file);
-        strtok(webId[num - 1], "\n");
-        strtok(webId[num - 1], "\r");
-        char tmp[200] = {0};
-        // 以换页符为标志读取后续的网页
-        while (fgets(tmp, 200, file) != NULL)
-        {
-            if (flag == 1)
-            {
-                strcpy(webId[num++], tmp);
-                strtok(webId[num - 1], "\n");
-                strtok(webId[num - 1], "\r");
-                flag = 0;
-            }
-            if (strstr(tmp, "\f"))
-            {
-                flag = 1;
-            }
-        }
-        fseek(file, 0, SEEK_SET);
-    }
-    else if (file == SampleFile)
-    {
-        int num = 0;
-        int flag = 0;
-        char tmp[200] = {0};
-        fgets(tmp, 10, file);
-        memset(tmp, 0, sizeof(tmp));
-        fgets(sampleWebId[num++], 200, file);
-        strtok(sampleWebId[num - 1], "\n");
-        strtok(sampleWebId[num - 1], "\r");
-        while (fgets(tmp, 200, file) != NULL)
-        {
-            if (flag == 1)
-            {
-                strcpy(sampleWebId[num++], tmp);
-                strtok(sampleWebId[num - 1], "\n");
-                strtok(sampleWebId[num - 1], "\r");
-                flag = 0;
-            }
-            if (strstr(tmp, "\f"))
-            {
-                flag = 1;
-            }
-        }
-        fseek(file, 0, SEEK_SET);
-    }
-}
 // 读取一个单词,同时要把单词转换成小写
 void GetWord(FILE *file)
 {
