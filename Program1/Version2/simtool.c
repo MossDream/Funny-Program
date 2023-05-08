@@ -9,8 +9,14 @@ typedef struct NonStopWord
 {
     char word[50];
     int count;
+    int status; // 标识该位置是否有元素，0表示没有，1表示有
 } NonStopWord;
-
+// 非停用词Hash表
+typedef struct NonStopWordHashTable
+{
+    int tableSize;
+    NonStopWord *table;
+} NonStopWordHashTable;
 // 停用词树，用前缀树实现
 typedef struct StopWordsTree
 {
@@ -25,11 +31,10 @@ typedef struct FeatureVectorTree
     int id;
     struct FeatureVectorTree *chilren[26];
 } FeatureVectorTree;
-
 // 变量定义
 
 // 数据库的非停用词单词数组
-NonStopWord nonStopWords[80000] = {0};
+NonStopWord nonStopWords[79999] = {0};
 // 数据库的非停用词数量
 int nonStopWordsNum = 0;
 
@@ -43,12 +48,6 @@ int pageFlag = 0;
 
 // 单词数组
 char word[100] = {0};
-
-// 网页标识信息的二维数组
-//  原网页标识信息
-char webId[8000][10] = {0};
-// 样本网页标识信息
-char sampleWebId[8000][10] = {0};
 
 // 各网页权重向量构成的二维数组
 // 原网页权重向量
@@ -158,22 +157,19 @@ int main(int argc, char **argv)
             printf("输出结果文件打开失败!\n");
             return 1;
         }
-        // 步骤1:获取各网页标识信息
-        GetWebId(WebFile);
-        GetWebId(SampleFile);
-        // 步骤2:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
+        // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
         CreateStopWordsTree();
         NonStopWordsCnt();
         NonStopWordsSort();
-        // 步骤3:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
+        // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
         CreateFeatureVectorTree(N);
         WebFeatureVectorCnt(WebFile);
         WebFeatureVectorCnt(SampleFile);
-        // 步骤4:计算各网页的指纹
+        // 步骤3:计算各网页的指纹
         WebFingerprintCnt(N, M);
-        // 步骤5:计算各网页的汉明距离
+        // 步骤4:计算各网页的汉明距离
         HammingDistanceCnt(M);
-        // 步骤6:按要求输出结果
+        // 步骤5:按要求输出结果
         OutputResult();
 
         // 步骤7:关闭文件
@@ -186,63 +182,6 @@ int main(int argc, char **argv)
     return 0;
 }
 // 功能函数实现
-
-// 读取网页标识信息
-void GetWebId(FILE *file)
-{
-    if (file == WebFile)
-    {
-        int num = 0;
-        int flag = 0;
-        // 读取第一个网页
-        fgets(webId[num++], 200, file);
-        strtok(webId[num - 1], "\n");
-        strtok(webId[num - 1], "\r");
-        char tmp[200] = {0};
-        // 以换页符为标志读取后续的网页
-        while (fgets(tmp, 200, file) != NULL)
-        {
-            if (flag == 1)
-            {
-                strcpy(webId[num++], tmp);
-                strtok(webId[num - 1], "\n");
-                strtok(webId[num - 1], "\r");
-                flag = 0;
-            }
-            if (strstr(tmp, "\f"))
-            {
-                flag = 1;
-            }
-        }
-        fseek(file, 0, SEEK_SET);
-    }
-    else if (file == SampleFile)
-    {
-        int num = 0;
-        int flag = 0;
-        char tmp[200] = {0};
-        fgets(tmp, 10, file);
-        memset(tmp, 0, sizeof(tmp));
-        fgets(sampleWebId[num++], 200, file);
-        strtok(sampleWebId[num - 1], "\n");
-        strtok(sampleWebId[num - 1], "\r");
-        while (fgets(tmp, 200, file) != NULL)
-        {
-            if (flag == 1)
-            {
-                strcpy(sampleWebId[num++], tmp);
-                strtok(sampleWebId[num - 1], "\n");
-                strtok(sampleWebId[num - 1], "\r");
-                flag = 0;
-            }
-            if (strstr(tmp, "\f"))
-            {
-                flag = 1;
-            }
-        }
-        fseek(file, 0, SEEK_SET);
-    }
-}
 // 读取一个单词,同时要把单词转换成小写
 void GetWord(FILE *file)
 {
@@ -326,28 +265,37 @@ int IsStopWord()
         return 0;
     }
 }
-// 非停用词词频统计
+// 非停用词词频统计，用Hash表实现
 void NonStopWordsCnt()
 {
+    NonStopWordHashTable *hashTable = (NonStopWordHashTable *)malloc(sizeof(NonStopWordHashTable));
+    hashTable->tableSize = 79999;
+    hashTable->table = nonStopWords;
     GetWord(WebFile);
     while (strlen(word) > 0)
     {
         if (IsStopWord() == 0)
         {
-            int i;
-            for (i = 0; i < nonStopWordsNum; i++)
+            int hash = 0;
+            for (int i = 0; i < strlen(word); i++)
             {
-                if (strcmp(nonStopWords[i].word, word) == 0)
-                {
-                    nonStopWords[i].count++;
-                    break;
-                }
+                hash = (hash << 5) + word[i];
             }
-            if (i == nonStopWordsNum)
+            hash = (hash & 0x7fffffff) % hashTable->tableSize;
+            while (hashTable->table[hash].status == 1 && strcmp(hashTable->table[hash].word, word) != 0)
             {
-                strcpy(nonStopWords[nonStopWordsNum].word, word);
-                nonStopWords[nonStopWordsNum].count = 1;
+                hash = (hash + 1) % hashTable->tableSize;
+            }
+            if (hashTable->table[hash].status == 0)
+            {
+                strcpy(hashTable->table[hash].word, word);
+                hashTable->table[hash].count = 1;
+                hashTable->table[hash].status = 1;
                 nonStopWordsNum++;
+            }
+            else if (hashTable->table[hash].status == 1)
+            {
+                hashTable->table[hash].count++;
             }
         }
         memset(word, 0, sizeof(word));
@@ -374,7 +322,7 @@ int cmp(const void *a, const void *b)
 void NonStopWordsSort()
 {
     int i, j;
-    qsort(nonStopWords, nonStopWordsNum, sizeof(NonStopWord), cmp);
+    qsort(nonStopWords, 79999, sizeof(NonStopWord), cmp);
 }
 // 创建特征向量树,用前缀树实现
 void CreateFeatureVectorTree(int N)
@@ -595,9 +543,9 @@ void OutputResult()
     {
         if (i == 0)
         {
-            printf("%s\n", sampleWebId[i]);
+            printf("Sample-%d\n", i + 1);
         }
-        fprintf(ResultFile, "%s\n", sampleWebId[i]);
+        fprintf(ResultFile, "Sample-%d\n", i + 1);
         for (j = 0; j < pageNum; j++)
         {
             if (hammingDistance[i][j] == 0)
@@ -628,9 +576,9 @@ void OutputResult()
             {
                 if (i == 0)
                 {
-                    printf("%s ", webId[tempResult[0][j] - 1]);
+                    printf("1-%d ", tempResult[0][j]);
                 }
-                fprintf(ResultFile, "%s ", webId[tempResult[0][j] - 1]);
+                fprintf(ResultFile, "1-%d ", tempResult[0][j]);
             }
             if (i == 0)
             {
@@ -649,9 +597,9 @@ void OutputResult()
             {
                 if (i == 0)
                 {
-                    printf("%s ", webId[tempResult[1][j] - 1]);
+                    printf("1-%d ", tempResult[1][j]);
                 }
-                fprintf(ResultFile, "%s ", webId[tempResult[1][j] - 1]);
+                fprintf(ResultFile, "1-%d ", tempResult[1][j]);
             }
             if (i == 0)
             {
@@ -670,9 +618,9 @@ void OutputResult()
             {
                 if (i == 0)
                 {
-                    printf("%s ", webId[tempResult[2][j] - 1]);
+                    printf("1-%d ", tempResult[2][j]);
                 }
-                fprintf(ResultFile, "%s ", webId[tempResult[2][j] - 1]);
+                fprintf(ResultFile, "1-%d ", tempResult[2][j]);
             }
             if (i == 0)
             {
@@ -691,9 +639,9 @@ void OutputResult()
             {
                 if (i == 0)
                 {
-                    printf("%s ", webId[tempResult[3][j] - 1]);
+                    printf("1-%d ", tempResult[3][j]);
                 }
-                fprintf(ResultFile, "%s ", webId[tempResult[3][j] - 1]);
+                fprintf(ResultFile, "1-%d ", tempResult[3][j]);
             }
             if (i == 0)
             {

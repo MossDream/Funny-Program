@@ -7,3 +7,4 @@
 ### 信息索引🚩
 **[Simhash算法的简单模拟](https://github.com/MossDream/Funny-Program/tree/main/Program1)**
 * **[Version 1 原版](https://github.com/MossDream/Funny-Program/tree/main/Program1/Version1)**
+* **[Version 2 优化](https://github.com/MossDream/Funny-Program/tree/main/Program1/Version2)**
