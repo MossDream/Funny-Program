@@ -265,7 +265,7 @@ int IsStopWord()
         return 0;
     }
 }
-// 非停用词词频统计
+// 非停用词词频统计，用Hash表实现
 void NonStopWordsCnt()
 {
     NonStopWordHashTable *hashTable = (NonStopWordHashTable *)malloc(sizeof(NonStopWordHashTable));
