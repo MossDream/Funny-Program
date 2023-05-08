@@ -157,22 +157,19 @@ int main(int argc, char **argv)
             printf("输出结果文件打开失败!\n");
             return 1;
         }
-        // 步骤1:获取各网页标识信息
-        GetWebId(WebFile);
-        GetWebId(SampleFile);
-        // 步骤2:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
+        // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
         CreateStopWordsTree();
         NonStopWordsCnt();
         NonStopWordsSort();
-        // 步骤3:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
+        // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
         CreateFeatureVectorTree(N);
         WebFeatureVectorCnt(WebFile);
         WebFeatureVectorCnt(SampleFile);
-        // 步骤4:计算各网页的指纹
+        // 步骤3:计算各网页的指纹
         WebFingerprintCnt(N, M);
-        // 步骤5:计算各网页的汉明距离
+        // 步骤4:计算各网页的汉明距离
         HammingDistanceCnt(M);
-        // 步骤6:按要求输出结果
+        // 步骤5:按要求输出结果
         OutputResult();
 
         // 步骤7:关闭文件
