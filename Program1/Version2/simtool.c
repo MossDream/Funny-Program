@@ -9,8 +9,9 @@ typedef struct NonStopWord
 {
     char word[50];
     int count;
-    int status;
+    int status; // 标识该位置是否有元素，0表示没有，1表示有
 } NonStopWord;
+// 非停用词Hash表
 typedef struct NonStopWordHashTable
 {
     int tableSize;
@@ -30,7 +31,6 @@ typedef struct FeatureVectorTree
     int id;
     struct FeatureVectorTree *chilren[26];
 } FeatureVectorTree;
-
 // 变量定义
 
 // 数据库的非停用词单词数组
@@ -48,12 +48,6 @@ int pageFlag = 0;
 
 // 单词数组
 char word[100] = {0};
-
-// 网页标识信息的二维数组
-//  原网页标识信息
-char webId[8000][10] = {0};
-// 样本网页标识信息
-char sampleWebId[8000][10] = {0};
 
 // 各网页权重向量构成的二维数组
 // 原网页权重向量
