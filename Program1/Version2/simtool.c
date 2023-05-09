@@ -522,21 +522,19 @@ void HammingDistanceCnt(int M)
 {
     int i = 0;
     int j = 0;
-    int k = 0;
-    int distance = 0;
     for (i = 0; i < samplePageNum; i++)
     {
         for (j = 0; j < pageNum; j++)
         {
-            distance = 0;
-            for (k = 0; k < M; k++)
+            ull tmp = sampleFingerprint[i] ^ fingerprint[j];
+            while (tmp != 0)
             {
-                if (sampleFingerprint[i][k] != fingerprint[j][k])
+                if ((tmp & 1) == 1)
                 {
-                    distance++;
+                    hammingDistance[i][j]++;
                 }
+                tmp >>= 1;
             }
-            hammingDistance[i][j] = distance;
         }
     }
 }
