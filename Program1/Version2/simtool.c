@@ -442,76 +442,79 @@ void WebFingerprintCnt(int N, int M)
     int i = 0;
     int j = 0;
     int k = 0;
-    int finger = 0;
-    char tempHash[500] = {0};
-    for (i = 0; i < pageNum; i++)
+    int finger[64] = {0};
+    char tmp[300] = {0};
+    char c = 0;
+    // 读取N行M列的Hash值，每行按二进制数存储在hashValue数组中
+    for (i = 0; i < N; i++)
     {
-        for (j = 0; j < N; j++)
+        fread(tmp, sizeof(char), M, HashFile);
+        fread(&c, sizeof(char), 1, HashFile);
+        while (c != '\n')
         {
-            fgets(tempHash, 500, HashFile);
-            for (k = 0; k < M; k++)
-            {
-                if (tempHash[k] == '1')
-                {
-                    fingerprint[i][k] += weight[i][j];
-                }
-                else if (tempHash[k] == '0')
-                {
-                    fingerprint[i][k] -= weight[i][j];
-                }
-            }
-            memset(tempHash, 0, sizeof(tempHash));
+            fread(&c, sizeof(char), 1, HashFile);
         }
-        fseek(HashFile, 0, SEEK_SET);
+        for (j = 0; j < M; j++)
+        {
+            if (tmp[j] == '1')
+            {
+                hashValue[i] += (1 << (M - j - 1));
+            }
+        }
     }
+    // 计算原网页指纹
     for (i = 0; i < pageNum; i++)
     {
         for (j = 0; j < M; j++)
         {
-            if (fingerprint[i][j] > 0)
+            for (k = 0; k < N; k++)
             {
-                fingerprint[i][j] = 1;
-            }
-            else
-            {
-                fingerprint[i][j] = 0;
-            }
-        }
-    }
-    fseek(HashFile, 0, SEEK_SET);
-    for (i = 0; i < samplePageNum; i++)
-    {
-        for (j = 0; j < N; j++)
-        {
-            fgets(tempHash, 500, HashFile);
-            for (k = 0; k < M; k++)
-            {
-                if (tempHash[k] == '1')
+                // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                if (weight[i][k] > 0)
                 {
-                    sampleFingerprint[i][k] += sampleWeight[i][j];
-                }
-                else if (tempHash[k] == '0')
-                {
-                    sampleFingerprint[i][k] -= sampleWeight[i][j];
+                    if ((hashValue[k] & (1 << (M - j - 1))) != 0)
+                    {
+                        finger[j] += weight[i][k];
+                    }
+                    else
+                    {
+                        finger[j] -= weight[i][k];
+                    }
                 }
             }
-            memset(tempHash, 0, sizeof(tempHash));
+            if (finger[j] > 0)
+            {
+                fingerprint[i] += (1 << (M - j - 1));
+            }
         }
-        fseek(HashFile, 0, SEEK_SET);
+        memset(finger, 0, sizeof(finger));
     }
+    // 计算样本网页指纹
     for (i = 0; i < samplePageNum; i++)
     {
         for (j = 0; j < M; j++)
         {
-            if (sampleFingerprint[i][j] > 0)
+            for (k = 0; k < N; k++)
             {
-                sampleFingerprint[i][j] = 1;
+                // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                if (sampleWeight[i][k] > 0)
+                {
+                    if ((hashValue[k] & (1 << (M - j - 1))) != 0)
+                    {
+                        finger[j] += sampleWeight[i][k];
+                    }
+                    else
+                    {
+                        finger[j] -= sampleWeight[i][k];
+                    }
+                }
             }
-            else
+            if (finger[j] > 0)
             {
-                sampleFingerprint[i][j] = 0;
+                sampleFingerprint[i] += (1 << (M - j - 1));
             }
         }
+        memset(finger, 0, sizeof(finger));
     }
 }
 // 计算各网页的汉明距离
