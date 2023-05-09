@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
+// 类型重命名
+typedef unsigned long long ull;
 // 结构定义
 // 非停用词单词信息体
 typedef struct NonStopWord
@@ -57,9 +58,11 @@ int sampleWeight[8000][10000] = {0};
 
 // 各网页指纹构成的二维数组
 // 原网页指纹
-int fingerprint[8000][130] = {0};
+ull fingerprint[8000] = {0};
 // 样本网页指纹
-int sampleFingerprint[8000][130] = {0};
+ull sampleFingerprint[8000] = {0};
+// 每个网页使用的Hash值，每行的Hash值按一个二进制数存储
+ull hashValue[15000] = {0};
 
 // 样本网页对原网页的汉明距离构成的二维数组
 // 横坐标是样本网页编号数（第1个网页编号0，以此类推），纵坐标是原网页编号数
