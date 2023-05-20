@@ -1,16 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-// 类型重命名
+#include <stdint.h>
+
+// 长整型变量简写
+typedef long long ll;
 typedef unsigned long long ull;
+
 // 结构定义
 // 非停用词单词信息体
 typedef struct NonStopWord
 {
-    char word[50];
+    char word[100];
     int count;
-    int status; // 标识该位置是否有元素，0表示没有，1表示有
+    int status; // 0表示已经填入Hash表中，1表示未填入
 } NonStopWord;
 // 非停用词Hash表
 typedef struct NonStopWordHashTable
@@ -18,24 +21,23 @@ typedef struct NonStopWordHashTable
     int tableSize;
     NonStopWord *table;
 } NonStopWordHashTable;
-// 停用词树，用前缀树实现
+// 停用词树，用前缀字典树实现
 typedef struct StopWordsTree
 {
     int cnt;
     struct StopWordsTree *chilren[26];
 } StopWordsTree;
-
-// 特征向量树，用前缀树实现
+// 特征向量树，用前缀字典树实现
 typedef struct FeatureVectorTree
 {
     int cnt;
     int id;
     struct FeatureVectorTree *chilren[26];
 } FeatureVectorTree;
-// 变量定义
 
+// 变量定义
 // 数据库的非停用词单词数组
-NonStopWord nonStopWords[79999] = {0};
+NonStopWord nonStopWords[133333] = {0};
 // 数据库的非停用词数量
 int nonStopWordsNum = 0;
 
@@ -50,34 +52,33 @@ int pageFlag = 0;
 // 单词数组
 char word[100] = {0};
 
+// 网页标识信息的二维数组
+//  原网页标识信息
+char webId[16000][50] = {0};
+// 样本网页标识信息
+char sampleWebId[16000][50] = {0};
+
 // 各网页权重向量构成的二维数组
 // 原网页权重向量
-int weight[8000][10000] = {0};
+int weight[16000][8000] = {0};
 // 样本网页权重向量
-int sampleWeight[8000][10000] = {0};
+int sampleWeight[16000][8000] = {0};
 
-// 各网页指纹构成的二维数组
-// 原网页指纹
-ull fingerprint[8000] = {0};
-// 样本网页指纹
-ull sampleFingerprint[8000] = {0};
-// 每个网页使用的Hash值，每行的Hash值按一个二进制数存储
-ull hashValue[15000] = {0};
+// 每个网页使用的Hash值，每行的Hash值按一个64位二进制数存储
+uint64_t hashValue[10000] = {0};
 
-// 样本网页对原网页的汉明距离构成的二维数组
-// 横坐标是样本网页编号数（第1个网页编号0，以此类推），纵坐标是原网页编号数
-int hammingDistance[8000][8000] = {0};
+// 原网页指纹，每行的指纹按一个64位二进制数存储
+uint64_t fingerprint[20000] = {0};
+// 样本网页指纹，每行的指纹按一个64位二进制数存储
+uint64_t sampleFingerprint[20000] = {0};
 
-// 临时储存输出结果
-int tempResult[5][8000] = {0};
-// 临时储存输出结果汉明距离为0的原网页数量
-int tempResult0Num = 0;
-// 临时储存输出结果汉明距离为1的原网页数量
-int tempResult1Num = 0;
-// 临时储存输出结果汉明距离为2的原网页数量
-int tempResult2Num = 0;
-// 临时储存输出结果汉明距离为3的原网页数量
-int tempResult3Num = 0;
+// 临时储存输出结果的数组
+int result[4][20000] = {0};
+// 汉明距离分别为0、1、2、3的网页数量
+int printPageNum0 = 0;
+int printPageNum1 = 0;
+int printPageNum2 = 0;
+int printPageNum3 = 0;
 
 // 停用词文件指针
 FILE *StopWordsFile;
@@ -96,7 +97,6 @@ StopWordsTree *StopWordsRoot = NULL;
 FeatureVectorTree *FeatureVectorRoot = NULL;
 
 // 功能函数声明
-
 // 读取一个单词
 void GetWord(FILE *file);
 // 读取网页标识信息
@@ -115,10 +115,8 @@ void CreateFeatureVectorTree(int N);
 void WebFeatureVectorCnt(FILE *file);
 // 计算网页指纹
 void WebFingerprintCnt(int N, int M);
-// 计算汉明距离
+// 计算汉明距离并输出结果
 void HammingDistanceCnt(int M);
-// 输出结果
-void OutputResult();
 
 // 主程序实现
 int main(int argc, char **argv)
@@ -136,7 +134,7 @@ int main(int argc, char **argv)
             printf("停用词文件打开失败！\n");
             return 1;
         }
-        WebFile = fopen("article.txt", "r");
+        WebFile = fopen("article.txt", "rb");
         if (WebFile == NULL)
         {
             printf("已有网页文件打开失败！\n");
@@ -148,34 +146,34 @@ int main(int argc, char **argv)
             printf("样本网页文件打开失败！\n");
             return 1;
         }
-        HashFile = fopen("hashvalue.txt", "r");
+        HashFile = fopen("hashvalue.txt", "rb");
         if (HashFile == NULL)
         {
             printf("Hash表文件打开失败!\n");
             return 1;
         }
-        ResultFile = fopen("result.txt", "w");
+        ResultFile = fopen("result.txt", "wb");
         if (ResultFile == NULL)
         {
             printf("输出结果文件打开失败!\n");
             return 1;
         }
-        // 步骤1:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
+        // 步骤1:获取各网页标识信息
+        GetWebId(WebFile);
+        GetWebId(SampleFile);
+        // 步骤2:得到排序后的非停用词单词数组（排序后前N个信息体就是特征向量）
         CreateStopWordsTree();
         NonStopWordsCnt();
         NonStopWordsSort();
-        // 步骤2:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
+        // 步骤3:统计每个网页（文本）的特征向量中每个特征（单词）的频度,得到权重向量
         CreateFeatureVectorTree(N);
         WebFeatureVectorCnt(WebFile);
         WebFeatureVectorCnt(SampleFile);
-        // 步骤3:计算各网页的指纹
+        // 步骤4:计算各网页的指纹
         WebFingerprintCnt(N, M);
-        // 步骤4:计算各网页的汉明距离
+        // 步骤5:计算各网页的汉明距离
         HammingDistanceCnt(M);
-        // 步骤5:按要求输出结果
-        OutputResult();
-
-        // 步骤7:关闭文件
+        // 步骤6:关闭文件
         fclose(StopWordsFile);
         fclose(WebFile);
         fclose(SampleFile);
@@ -185,6 +183,62 @@ int main(int argc, char **argv)
     return 0;
 }
 // 功能函数实现
+// 读取网页标识信息
+void GetWebId(FILE *file)
+{
+    if (file == WebFile)
+    {
+        int num = 0;
+        int flag = 0;
+        // 读取第一个网页
+        fgets(webId[num++], 200, file);
+        strtok(webId[num - 1], "\n");
+        strtok(webId[num - 1], "\r");
+        char tmp[200] = {0};
+        // 以换页符为标志读取后续的网页
+        while (fgets(tmp, 200, file) != NULL)
+        {
+            if (flag == 1)
+            {
+                strcpy(webId[num++], tmp);
+                strtok(webId[num - 1], "\n");
+                strtok(webId[num - 1], "\r");
+                flag = 0;
+            }
+            if (strstr(tmp, "\f"))
+            {
+                flag = 1;
+            }
+        }
+        fseek(file, 0, SEEK_SET);
+    }
+    else if (file == SampleFile)
+    {
+        int num = 0;
+        int flag = 0;
+        char tmp[200] = {0};
+        fgets(tmp, 10, file);
+        memset(tmp, 0, sizeof(tmp));
+        fgets(sampleWebId[num++], 200, file);
+        strtok(sampleWebId[num - 1], "\n");
+        strtok(sampleWebId[num - 1], "\r");
+        while (fgets(tmp, 200, file) != NULL)
+        {
+            if (flag == 1)
+            {
+                strcpy(sampleWebId[num++], tmp);
+                strtok(sampleWebId[num - 1], "\n");
+                strtok(sampleWebId[num - 1], "\r");
+                flag = 0;
+            }
+            if (strstr(tmp, "\f"))
+            {
+                flag = 1;
+            }
+        }
+        fseek(file, 0, SEEK_SET);
+    }
+}
 // 读取一个单词,同时要把单词转换成小写
 void GetWord(FILE *file)
 {
@@ -192,9 +246,13 @@ void GetWord(FILE *file)
     char ch;
     while ((ch = fgetc(file)) != EOF)
     {
-        if (isalpha(ch))
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))
         {
-            word[i++] = tolower(ch);
+            if (ch >= 'A' && ch <= 'Z')
+            {
+                ch = ch | 0x20;
+            }
+            word[i++] = ch;
         }
         else
         {
@@ -214,7 +272,7 @@ void GetWord(FILE *file)
         word[i] = '\0';
     }
 }
-// 创建停用词树,用前缀树实现
+// 创建停用词树,用前缀字典树实现
 void CreateStopWordsTree()
 {
     StopWordsRoot = (StopWordsTree *)malloc(sizeof(StopWordsTree));
@@ -269,22 +327,38 @@ int IsStopWord()
     }
 }
 // 非停用词词频统计，用Hash表实现
+// 模拟MurmurHash算法的hash函数
+uint64_t MurmurHash64A(const void *key, int len, uint64_t seed)
+{
+    const uint64_t m = 0xc6a4a7935bd1e995LLU;
+    const int r = 47;
+
+    uint64_t h = seed ^ (len * m);
+
+    const unsigned char *data = (const unsigned char *)key;
+
+    for (int i = 0; i < len; i++)
+    {
+        h = (h * m) ^ data[i];
+        h = (h ^ (h >> r)) * m;
+    }
+
+    return h;
+}
 void NonStopWordsCnt()
 {
     NonStopWordHashTable *hashTable = (NonStopWordHashTable *)malloc(sizeof(NonStopWordHashTable));
-    hashTable->tableSize = 79999;
+    hashTable->tableSize = 133333;
     hashTable->table = nonStopWords;
+    int len = 0;
     GetWord(WebFile);
-    while (strlen(word) > 0)
+    len = strlen(word);
+    while (len > 0)
     {
         if (IsStopWord() == 0)
         {
-            int hash = 0;
-            for (int i = 0; i < strlen(word); i++)
-            {
-                hash = (hash << 5) + word[i];
-            }
-            hash = (hash & 0x7fffffff) % hashTable->tableSize;
+            uint64_t hash = 0;
+            hash = MurmurHash64A(word, len, 0) % hashTable->tableSize;
             while (hashTable->table[hash].status == 1 && strcmp(hashTable->table[hash].word, word) != 0)
             {
                 hash = (hash + 1) % hashTable->tableSize;
@@ -303,6 +377,7 @@ void NonStopWordsCnt()
         }
         memset(word, 0, sizeof(word));
         GetWord(WebFile);
+        len = strlen(word);
     }
     memset(word, 0, sizeof(word));
 }
@@ -325,9 +400,9 @@ int cmp(const void *a, const void *b)
 void NonStopWordsSort()
 {
     int i, j;
-    qsort(nonStopWords, 79999, sizeof(NonStopWord), cmp);
+    qsort(nonStopWords, 133333, sizeof(NonStopWord), cmp);
 }
-// 创建特征向量树,用前缀树实现
+// 创建特征向量树,用前缀字典树实现
 void CreateFeatureVectorTree(int N)
 {
     FeatureVectorRoot = (FeatureVectorTree *)malloc(sizeof(FeatureVectorTree));
@@ -370,16 +445,17 @@ void WebFeatureVectorCnt(FILE *file)
         {
             pageFlag = 0;
             GetWord(file);
+            int len = strlen(word);
             if (pageFlag == 1)
             {
                 pageNum++;
                 pageFlag = 0;
             }
-            if (strlen(word) > 0)
+            if (len > 0)
             {
                 FeatureVectorTree *p = FeatureVectorRoot;
-                int len = 0;
-                for (int i = 0; i < strlen(word); i++)
+                int len1 = 0;
+                for (int i = 0; i < len; i++)
                 {
                     int index = word[i] - 'a';
                     if (p->chilren[index] == NULL)
@@ -387,9 +463,9 @@ void WebFeatureVectorCnt(FILE *file)
                         break;
                     }
                     p = p->chilren[index];
-                    len++;
+                    len1++;
                 }
-                if (p->cnt == 1 && len == strlen(word))
+                if (p->cnt == 1 && len1 == len)
                 {
                     weight[pageNum - 1][p->id]++;
                 }
@@ -405,6 +481,7 @@ void WebFeatureVectorCnt(FILE *file)
         {
             pageFlag = 0;
             GetWord(file);
+            int len = strlen(word);
             if (pageFlag == 1)
             {
                 if (!feof(file))
@@ -416,8 +493,8 @@ void WebFeatureVectorCnt(FILE *file)
             if (strlen(word) > 0 && strcmp(word, "sample") != 0)
             {
                 FeatureVectorTree *p = FeatureVectorRoot;
-                int len = 0;
-                for (int i = 0; i < strlen(word); i++)
+                int len1 = 0;
+                for (int i = 0; i < len; i++)
                 {
                     int index = word[i] - 'a';
                     if (p->chilren[index] == NULL)
@@ -425,9 +502,9 @@ void WebFeatureVectorCnt(FILE *file)
                         break;
                     }
                     p = p->chilren[index];
-                    len++;
+                    len1++;
                 }
-                if (p->cnt == 1 && len == strlen(word))
+                if (p->cnt == 1 && len1 == len)
                 {
                     sampleWeight[samplePageNum - 1][p->id]++;
                 }
@@ -442,23 +519,26 @@ void WebFingerprintCnt(int N, int M)
     int i = 0;
     int j = 0;
     int k = 0;
-    int finger[64] = {0};
-    char tmp[300] = {0};
+    ll finger[64] = {0};
+    char tmp[600] = {0};
     char c = 0;
     // 读取N行M列的Hash值，每行按二进制数存储在hashValue数组中
     for (i = 0; i < N; i++)
     {
         fread(tmp, sizeof(char), M, HashFile);
-        fread(&c, sizeof(char), 1, HashFile);
-        while (c != '\n')
+        if (tmp[M - 1] != '\n')
         {
             fread(&c, sizeof(char), 1, HashFile);
+            while (c != '\n')
+            {
+                fread(&c, sizeof(char), 1, HashFile);
+            }
         }
         for (j = 0; j < M; j++)
         {
             if (tmp[j] == '1')
             {
-                hashValue[i] += (1 << (M - j - 1));
+                hashValue[i] += (1ULL << (M - j - 1));
             }
         }
     }
@@ -472,7 +552,7 @@ void WebFingerprintCnt(int N, int M)
                 // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
                 if (weight[i][k] > 0)
                 {
-                    if ((hashValue[k] & (1 << (M - j - 1))) != 0)
+                    if ((hashValue[k] & (1ULL << (M - j - 1))) != 0)
                     {
                         finger[j] += weight[i][k];
                     }
@@ -484,7 +564,7 @@ void WebFingerprintCnt(int N, int M)
             }
             if (finger[j] > 0)
             {
-                fingerprint[i] += (1 << (M - j - 1));
+                fingerprint[i] += (1ULL << (M - j - 1));
             }
         }
         memset(finger, 0, sizeof(finger));
@@ -499,7 +579,7 @@ void WebFingerprintCnt(int N, int M)
                 // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
                 if (sampleWeight[i][k] > 0)
                 {
-                    if ((hashValue[k] & (1 << (M - j - 1))) != 0)
+                    if ((hashValue[k] & (1ULL << (M - j - 1))) != 0)
                     {
                         finger[j] += sampleWeight[i][k];
                     }
@@ -511,152 +591,185 @@ void WebFingerprintCnt(int N, int M)
             }
             if (finger[j] > 0)
             {
-                sampleFingerprint[i] += (1 << (M - j - 1));
+                sampleFingerprint[i] += (1ULL << (M - j - 1));
             }
         }
         memset(finger, 0, sizeof(finger));
     }
 }
-// 计算各网页的汉明距离
+// 计算各网页的汉明距离并输出结果，利用二进制数的异或运算
 void HammingDistanceCnt(int M)
 {
     int i = 0;
     int j = 0;
+    int distance = 0;
     for (i = 0; i < samplePageNum; i++)
     {
         for (j = 0; j < pageNum; j++)
         {
-            ull tmp = sampleFingerprint[i] ^ fingerprint[j];
+            uint64_t tmp = sampleFingerprint[i] ^ fingerprint[j];
             while (tmp != 0)
             {
                 if ((tmp & 1) == 1)
                 {
-                    hammingDistance[i][j]++;
+                    distance++;
                 }
                 tmp >>= 1;
             }
+            if (distance == 3)
+            {
+                result[3][printPageNum3++] = j;
+            }
+            else if (distance == 2)
+            {
+                result[2][printPageNum2++] = j;
+            }
+            else if (distance == 1)
+            {
+                result[1][printPageNum1++] = j;
+            }
+            else if (distance == 0)
+            {
+                result[0][printPageNum0++] = j;
+            }
+            distance = 0;
         }
-    }
-}
-// 按要求输出结果
-void OutputResult()
-{
-    int i = 0;
-    int j = 0;
-    for (i = 0; i < samplePageNum; i++)
-    {
         if (i == 0)
         {
-            printf("Sample-%d\n", i + 1);
-        }
-        fprintf(ResultFile, "Sample-%d\n", i + 1);
-        for (j = 0; j < pageNum; j++)
-        {
-            if (hammingDistance[i][j] == 0)
-            {
-                tempResult[0][tempResult0Num++] = j + 1;
-            }
-            else if (hammingDistance[i][j] == 1)
-            {
-                tempResult[1][tempResult1Num++] = j + 1;
-            }
-            else if (hammingDistance[i][j] == 2)
-            {
-                tempResult[2][tempResult2Num++] = j + 1;
-            }
-            else if (hammingDistance[i][j] == 3)
-            {
-                tempResult[3][tempResult3Num++] = j + 1;
-            }
-        }
-        if (tempResult0Num > 0)
-        {
-            if (i == 0)
+            printf("%s\n", sampleWebId[i]);
+            int k = 0;
+            if (printPageNum0 > 0)
             {
                 printf("0:");
-            }
-            fprintf(ResultFile, "0:");
-            for (j = 0; j < tempResult0Num; j++)
-            {
-                if (i == 0)
+                for (k = 0; k < printPageNum0; k++)
                 {
-                    printf("1-%d ", tempResult[0][j]);
+                    printf("%s ", webId[result[0][k]]);
                 }
-                fprintf(ResultFile, "1-%d ", tempResult[0][j]);
-            }
-            if (i == 0)
-            {
                 printf("\n");
             }
-            fprintf(ResultFile, "\n");
-        }
-        if (tempResult1Num > 0)
-        {
-            if (i == 0)
+            if (printPageNum1 > 0)
             {
                 printf("1:");
-            }
-            fprintf(ResultFile, "1:");
-            for (j = 0; j < tempResult1Num; j++)
-            {
-                if (i == 0)
+                for (k = 0; k < printPageNum1; k++)
                 {
-                    printf("1-%d ", tempResult[1][j]);
+                    printf("%s ", webId[result[1][k]]);
                 }
-                fprintf(ResultFile, "1-%d ", tempResult[1][j]);
-            }
-            if (i == 0)
-            {
                 printf("\n");
             }
-            fprintf(ResultFile, "\n");
-        }
-        if (tempResult2Num > 0)
-        {
-            if (i == 0)
+            if (printPageNum2 > 0)
             {
                 printf("2:");
-            }
-            fprintf(ResultFile, "2:");
-            for (j = 0; j < tempResult2Num; j++)
-            {
-                if (i == 0)
+                for (k = 0; k < printPageNum2; k++)
                 {
-                    printf("1-%d ", tempResult[2][j]);
+                    printf("%s ", webId[result[2][k]]);
                 }
-                fprintf(ResultFile, "1-%d ", tempResult[2][j]);
-            }
-            if (i == 0)
-            {
                 printf("\n");
             }
-            fprintf(ResultFile, "\n");
-        }
-        if (tempResult3Num > 0)
-        {
-            if (i == 0)
+            if (printPageNum3 > 0)
             {
                 printf("3:");
-            }
-            fprintf(ResultFile, "3:");
-            for (j = 0; j < tempResult3Num; j++)
-            {
-                if (i == 0)
+                for (k = 0; k < printPageNum3; k++)
                 {
-                    printf("1-%d ", tempResult[3][j]);
+                    printf("%s ", webId[result[3][k]]);
                 }
-                fprintf(ResultFile, "1-%d ", tempResult[3][j]);
-            }
-            if (i == 0)
-            {
                 printf("\n");
             }
-            fprintf(ResultFile, "\n");
+            fwrite(sampleWebId[i], sizeof(char), strlen(sampleWebId[i]), ResultFile);
+            fwrite("\n", sizeof(char), 1, ResultFile);
+            if (printPageNum0 > 0)
+            {
+                fwrite("0:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum0; k++)
+                {
+                    fwrite(webId[result[0][k]], sizeof(char), strlen(webId[result[0][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            if (printPageNum1 > 0)
+            {
+                fwrite("1:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum1; k++)
+                {
+                    fwrite(webId[result[1][k]], sizeof(char), strlen(webId[result[1][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            if (printPageNum2 > 0)
+            {
+                fwrite("2:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum2; k++)
+                {
+                    fwrite(webId[result[2][k]], sizeof(char), strlen(webId[result[2][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            if (printPageNum3 > 0)
+            {
+                fwrite("3:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum3; k++)
+                {
+                    fwrite(webId[result[3][k]], sizeof(char), strlen(webId[result[3][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            printPageNum0 = 0;
+            printPageNum1 = 0;
+            printPageNum2 = 0;
+            printPageNum3 = 0;
         }
-        memset(tempResult, 0, sizeof(tempResult));
-        tempResult0Num = 0;
-        tempResult1Num = 0;
-        tempResult2Num = 0;
-        tempResult3Num = 0;
+        else
+        {
+            fwrite(sampleWebId[i], sizeof(char), strlen(sampleWebId[i]), ResultFile);
+            fwrite("\n", sizeof(char), 1, ResultFile);
+            int k = 0;
+            if (printPageNum0 > 0)
+            {
+                fwrite("0:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum0; k++)
+                {
+                    fwrite(webId[result[0][k]], sizeof(char), strlen(webId[result[0][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            if (printPageNum1 > 0)
+            {
+                fwrite("1:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum1; k++)
+                {
+                    fwrite(webId[result[1][k]], sizeof(char), strlen(webId[result[1][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            if (printPageNum2 > 0)
+            {
+                fwrite("2:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum2; k++)
+                {
+                    fwrite(webId[result[2][k]], sizeof(char), strlen(webId[result[2][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            if (printPageNum3 > 0)
+            {
+                fwrite("3:", sizeof(char), 2, ResultFile);
+                for (k = 0; k < printPageNum3; k++)
+                {
+                    fwrite(webId[result[3][k]], sizeof(char), strlen(webId[result[3][k]]), ResultFile);
+                    fwrite(" ", sizeof(char), 1, ResultFile);
+                }
+                fwrite("\n", sizeof(char), 1, ResultFile);
+            }
+            printPageNum0 = 0;
+            printPageNum1 = 0;
+            printPageNum2 = 0;
+            printPageNum3 = 0;
+        }
     }
 }
