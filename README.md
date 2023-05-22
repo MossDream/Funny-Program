@@ -8,3 +8,5 @@
 **[Simhash算法的简单模拟](https://github.com/MossDream/Funny-Program/tree/main/Program1)**
 * **[Version 1 原版](https://github.com/MossDream/Funny-Program/tree/main/Program1/Version1)**
 * **[Version 2 优化](https://github.com/MossDream/Funny-Program/tree/main/Program1/Version2)**
+* **[Version 3 优化](https://github.com/MossDream/Funny-Program/tree/main/Program1/Version3)**
+* **[Version 4 优化](https://github.com/MossDream/Funny-Program/tree/main/Program1/Version4)**
