@@ -3,6 +3,12 @@
 #include <string.h>
 #include <stdint.h>
 
+// 宏定义
+#define MAX_N 10000
+#define MAX_WORD_LEN 200
+#define MAX_ID_LEN 20
+#define MAX_WEB_PAGE 23000
+#define MAX_TABLE_SIZE 1377777
 // 长整型变量简写
 typedef long long ll;
 typedef unsigned long long ull;
@@ -11,7 +17,7 @@ typedef unsigned long long ull;
 // 非停用词单词信息体
 typedef struct NonStopWord
 {
-    char word[100];
+    char word[MAX_WORD_LEN];
     int count;
     int status; // 0表示已经填入Hash表中，1表示未填入
 } NonStopWord;
@@ -37,7 +43,7 @@ typedef struct FeatureVectorTree
 
 // 变量定义
 // 数据库的非停用词单词数组
-NonStopWord nonStopWords[133333] = {0};
+NonStopWord nonStopWords[MAX_TABLE_SIZE] = {0};
 // 数据库的非停用词数量
 int nonStopWordsNum = 0;
 
@@ -50,30 +56,33 @@ int samplePageNum = 0;
 int pageFlag = 0;
 
 // 单词数组
-char word[100] = {0};
+char word[MAX_WORD_LEN] = {0};
 
 // 网页标识信息的二维数组
 //  原网页标识信息
-char webId[16000][50] = {0};
+char webId[MAX_WEB_PAGE][MAX_ID_LEN] = {0};
 // 样本网页标识信息
-char sampleWebId[16000][50] = {0};
+char sampleWebId[MAX_WEB_PAGE][MAX_ID_LEN] = {0};
 
 // 各网页权重向量构成的二维数组
 // 原网页权重向量
-int weight[16000][8000] = {0};
+int weight[MAX_WEB_PAGE][MAX_N] = {0};
 // 样本网页权重向量
-int sampleWeight[16000][8000] = {0};
+int sampleWeight[MAX_WEB_PAGE][MAX_N] = {0};
 
-// 每个网页使用的Hash值，每行的Hash值按一个64位二进制数存储
-uint64_t hashValue[10000] = {0};
+// 每个网页使用的Hash值，处理128位Hash值时按两个64位二进制数分别存储
+uint64_t lowerHashValue[MAX_N] = {0};
+uint64_t upperHashValue[MAX_N] = {0};
 
 // 原网页指纹，每行的指纹按一个64位二进制数存储
-uint64_t fingerprint[20000] = {0};
+uint64_t lowerFingerprint[MAX_WEB_PAGE] = {0};
+uint64_t upperFingerprint[MAX_WEB_PAGE] = {0};
 // 样本网页指纹，每行的指纹按一个64位二进制数存储
-uint64_t sampleFingerprint[20000] = {0};
+uint64_t lowerSampleFingerprint[MAX_WEB_PAGE] = {0};
+uint64_t upperSampleFingerprint[MAX_WEB_PAGE] = {0};
 
 // 临时储存输出结果的数组
-int result[4][20000] = {0};
+int result[4][MAX_WEB_PAGE] = {0};
 // 汉明距离分别为0、1、2、3的网页数量
 int printPageNum0 = 0;
 int printPageNum1 = 0;
@@ -348,7 +357,7 @@ uint64_t MurmurHash64A(const void *key, int len, uint64_t seed)
 void NonStopWordsCnt()
 {
     NonStopWordHashTable *hashTable = (NonStopWordHashTable *)malloc(sizeof(NonStopWordHashTable));
-    hashTable->tableSize = 133333;
+    hashTable->tableSize = MAX_TABLE_SIZE;
     hashTable->table = nonStopWords;
     int len = 0;
     GetWord(WebFile);
@@ -400,7 +409,7 @@ int cmp(const void *a, const void *b)
 void NonStopWordsSort()
 {
     int i, j;
-    qsort(nonStopWords, 133333, sizeof(NonStopWord), cmp);
+    qsort(nonStopWords, MAX_TABLE_SIZE, sizeof(NonStopWord), cmp);
 }
 // 创建特征向量树,用前缀字典树实现
 void CreateFeatureVectorTree(int N)
@@ -519,9 +528,10 @@ void WebFingerprintCnt(int N, int M)
     int i = 0;
     int j = 0;
     int k = 0;
-    ll finger[64] = {0};
+    ll finger[128] = {0};
     char tmp[600] = {0};
     char c = 0;
+    int left = M - 64;
     // 读取N行M列的Hash值，每行按二进制数存储在hashValue数组中
     for (i = 0; i < N; i++)
     {
@@ -534,67 +544,195 @@ void WebFingerprintCnt(int N, int M)
                 fread(&c, sizeof(char), 1, HashFile);
             }
         }
-        for (j = 0; j < M; j++)
+        if (left > 0)
         {
-            if (tmp[j] == '1')
+            for (j = 0; j < 64; j++)
             {
-                hashValue[i] += (1ULL << (M - j - 1));
+                if (tmp[j] == '1')
+                {
+                    upperHashValue[i] += (1ULL << (63 - j));
+                }
+            }
+            for (j = 64; j < M; j++)
+            {
+                if (tmp[j] == '1')
+                {
+                    lowerHashValue[i] += (1ULL << (M - j - 1));
+                }
+            }
+        }
+        else
+        {
+            for (j = 0; j < M; j++)
+            {
+                if (tmp[j] == '1')
+                {
+                    lowerHashValue[i] += (1ULL << (M - j - 1));
+                }
             }
         }
     }
     // 计算原网页指纹
-    for (i = 0; i < pageNum; i++)
+    if (left > 0)
     {
-        for (j = 0; j < M; j++)
+        for (i = 0; i < pageNum; i++)
         {
-            for (k = 0; k < N; k++)
+            for (j = 0; j < 64; j++)
             {
-                // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
-                if (weight[i][k] > 0)
+                for (k = 0; k < N; k++)
                 {
-                    if ((hashValue[k] & (1ULL << (M - j - 1))) != 0)
+                    // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                    if (weight[i][k] > 0)
                     {
-                        finger[j] += weight[i][k];
-                    }
-                    else
-                    {
-                        finger[j] -= weight[i][k];
+                        if ((upperHashValue[k] & (1ULL << (63 - j))) != 0)
+                        {
+                            finger[j] += weight[i][k];
+                        }
+                        else
+                        {
+                            finger[j] -= weight[i][k];
+                        }
                     }
                 }
+                if (finger[j] > 0)
+                {
+                    upperFingerprint[i] += (1ULL << (63 - j));
+                }
             }
-            if (finger[j] > 0)
+            for (j = 64; j < M; j++)
             {
-                fingerprint[i] += (1ULL << (M - j - 1));
+                for (k = 0; k < N; k++)
+                {
+                    // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                    if (weight[i][k] > 0)
+                    {
+                        if ((lowerHashValue[k] & (1ULL << (M - j - 1))) != 0)
+                        {
+                            finger[j] += weight[i][k];
+                        }
+                        else
+                        {
+                            finger[j] -= weight[i][k];
+                        }
+                    }
+                }
+                if (finger[j] > 0)
+                {
+                    lowerFingerprint[i] += (1ULL << (M - j - 1));
+                }
             }
+            memset(finger, 0, sizeof(finger));
         }
-        memset(finger, 0, sizeof(finger));
+    }
+    else
+    {
+        for (i = 0; i < pageNum; i++)
+        {
+            for (j = 0; j < M; j++)
+            {
+                for (k = 0; k < N; k++)
+                {
+                    // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                    if (weight[i][k] > 0)
+                    {
+                        if ((lowerHashValue[k] & (1ULL << (M - j - 1))) != 0)
+                        {
+                            finger[j] += weight[i][k];
+                        }
+                        else
+                        {
+                            finger[j] -= weight[i][k];
+                        }
+                    }
+                }
+                if (finger[j] > 0)
+                {
+                    lowerFingerprint[i] += (1ULL << (M - j - 1));
+                }
+            }
+            memset(finger, 0, sizeof(finger));
+        }
     }
     // 计算样本网页指纹
-    for (i = 0; i < samplePageNum; i++)
+    if (left > 0)
     {
-        for (j = 0; j < M; j++)
+        for (i = 0; i < samplePageNum; i++)
         {
-            for (k = 0; k < N; k++)
+            for (j = 0; j < 64; j++)
             {
-                // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
-                if (sampleWeight[i][k] > 0)
+                for (k = 0; k < N; k++)
                 {
-                    if ((hashValue[k] & (1ULL << (M - j - 1))) != 0)
+                    // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                    if (sampleWeight[i][k] > 0)
                     {
-                        finger[j] += sampleWeight[i][k];
-                    }
-                    else
-                    {
-                        finger[j] -= sampleWeight[i][k];
+                        if ((upperHashValue[k] & (1ULL << (63 - j))) != 0)
+                        {
+                            finger[j] += sampleWeight[i][k];
+                        }
+                        else
+                        {
+                            finger[j] -= sampleWeight[i][k];
+                        }
                     }
                 }
+                if (finger[j] > 0)
+                {
+                    upperSampleFingerprint[i] += (1ULL << (63 - j));
+                }
             }
-            if (finger[j] > 0)
+            for (j = 64; j < M; j++)
             {
-                sampleFingerprint[i] += (1ULL << (M - j - 1));
+                for (k = 0; k < N; k++)
+                {
+                    // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                    if (sampleWeight[i][k] > 0)
+                    {
+                        if ((lowerHashValue[k] & (1ULL << (M - j - 1))) != 0)
+                        {
+                            finger[j] += sampleWeight[i][k];
+                        }
+                        else
+                        {
+                            finger[j] -= sampleWeight[i][k];
+                        }
+                    }
+                }
+                if (finger[j] > 0)
+                {
+                    lowerSampleFingerprint[i] += (1ULL << (M - j - 1));
+                }
             }
+            memset(finger, 0, sizeof(finger));
         }
-        memset(finger, 0, sizeof(finger));
+    }
+    else
+    {
+        for (i = 0; i < samplePageNum; i++)
+        {
+            for (j = 0; j < M; j++)
+            {
+                for (k = 0; k < N; k++)
+                {
+                    // 对应Hash值该位是1，累加上权重；对应Hash值该位是0，累减权重
+                    if (sampleWeight[i][k] > 0)
+                    {
+                        if ((lowerHashValue[k] & (1ULL << (M - j - 1))) != 0)
+                        {
+                            finger[j] += sampleWeight[i][k];
+                        }
+                        else
+                        {
+                            finger[j] -= sampleWeight[i][k];
+                        }
+                    }
+                }
+                if (finger[j] > 0)
+                {
+                    lowerSampleFingerprint[i] += (1ULL << (M - j - 1));
+                }
+            }
+            memset(finger, 0, sizeof(finger));
+        }
     }
 }
 // 计算各网页的汉明距离并输出结果，利用二进制数的异或运算
@@ -603,18 +741,43 @@ void HammingDistanceCnt(int M)
     int i = 0;
     int j = 0;
     int distance = 0;
+    int left = M - 64;
     for (i = 0; i < samplePageNum; i++)
     {
         for (j = 0; j < pageNum; j++)
         {
-            uint64_t tmp = sampleFingerprint[i] ^ fingerprint[j];
-            while (tmp != 0)
+            if (left > 0)
             {
-                if ((tmp & 1) == 1)
+                uint64_t tmp = upperSampleFingerprint[i] ^ upperFingerprint[j];
+                while (tmp != 0)
                 {
-                    distance++;
+                    if ((tmp & 1) == 1)
+                    {
+                        distance++;
+                    }
+                    tmp >>= 1;
                 }
-                tmp >>= 1;
+                tmp = lowerSampleFingerprint[i] ^ lowerFingerprint[j];
+                while (tmp != 0)
+                {
+                    if ((tmp & 1) == 1)
+                    {
+                        distance++;
+                    }
+                    tmp >>= 1;
+                }
+            }
+            else
+            {
+                uint64_t tmp = lowerSampleFingerprint[i] ^ lowerFingerprint[j];
+                while (tmp != 0)
+                {
+                    if ((tmp & 1) == 1)
+                    {
+                        distance++;
+                    }
+                    tmp >>= 1;
+                }
             }
             if (distance == 3)
             {
