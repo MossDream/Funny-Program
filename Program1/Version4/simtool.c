@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
+#pragma GCC optimize("Ofast")
 // 长整型变量简写
 typedef long long ll;
 typedef unsigned long long ull;
@@ -169,6 +169,7 @@ int main(int argc, char **argv)
         并计算网页指纹
         */
         CreateFeatureVectorTree(N);
+        //!!! 到此步约耗时0.9秒(总耗时3秒) !!!
         WebFingerprintCnt(N, M);
         // 步骤4:计算各网页的汉明距离
         HammingDistanceCnt(M);
