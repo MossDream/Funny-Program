@@ -1,5 +1,5 @@
-# Funny-Program
-这个仓库会收录我个人编写的一些小项目✨
+# Coding-Program
+这个仓库会收录我个人编写的一些规模较大的代码项目✨
 ## Program 1
 ### 基本介绍👓
 * 该项目的具体要求在**statement** PDF文件中，实质是**对Simhash算法比较网页相似度的模拟**
